@@ -1,0 +1,2 @@
+table_set_default route_pkt route
+table_add route_pkt _drop 0 =>
