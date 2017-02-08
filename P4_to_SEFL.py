@@ -37,14 +37,13 @@ class Node(object):
 
 
 def toSEFL(node):
-    print str(node.Node_ID) + ": " + node.Node_Type
+    #print str(node.Node_ID) + ": " + node.Node_Type
     if node.Node_Type == 'P4Program':
         toSEFL(node.declarations) 
     elif node.Node_Type == 'IndexedVector<Node>':
         for v in node.vec:
             toSEFL(v)
     elif node.Node_Type == 'P4Control':
-        print vars(node)
         toSEFL(node.type.applyParams)
         toSEFL(node.controlLocals)
         toSEFL(node.body) 
@@ -103,14 +102,13 @@ def toSEFL(node):
     elif node.Node_Type == 'P4Table':
         toSEFL(node.properties)
     elif node.Node_Type == 'Parameter':
-        pass
+        print "Allocate('" + node.name + "', " + str(node.type.size) + ")"
     elif node.Node_Type == 'ParameterList':
         toSEFL(node.parameters)
     elif node.Node_Type == 'Path':
-        print vars(node)
         return node.name
     elif node.Node_Type == 'PathExpression':
-        toSEFL(node.path)
+        return toSEFL(node.path)
     elif node.Node_Type == 'Property':
         toSEFL(node.value)
     elif node.Node_Type == 'StringLiteral':
