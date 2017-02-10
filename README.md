@@ -8,4 +8,4 @@ The folder *testdata* contains sample P4 programs with their json files. To tran
 
 `python src/P4_to_SEFL.py testdata/action_param.json`
 
-Each P4 program in *testdata* also has its representation after the [p4c](https://github.com/p4lang/p4c) compiler frontend and midend passes from *p4test* in the form of *testdata/filename [compiled].p4*
+The json representations are obtained from the *p4test* backend of the [p4c](https://github.com/p4lang/p4c) compiler. They include some compiler optimizations. You can check the optimized P4 code of the sample programs in their corresponding *testdata/filename [compiled].p4* files.
