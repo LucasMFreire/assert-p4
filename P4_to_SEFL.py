@@ -34,10 +34,10 @@ class Node(object):
                 setattr(updateNode, k, l)
             else:
                 setattr(updateNode, k, node[k])
-
+                
 
 def toSEFL(node):
-    #print str(node.Node_ID) + ": " + node.Node_Type
+    print str(node.Node_ID) + ": " + node.Node_Type
     if node.Node_Type == 'P4Program':
         toSEFL(node.declarations) 
     elif node.Node_Type == 'IndexedVector<Node>':
@@ -49,9 +49,6 @@ def toSEFL(node):
         toSEFL(node.body) 
     elif node.Node_Type == 'BlockStatement':
         toSEFL(node.components)
-    elif node.Node_Type == 'IndexedVector<StatOrDecl>':
-        for v in node.vec:
-            toSEFL(v)  
     elif node.Node_Type == 'ActionList':
         pass 
     elif node.Node_Type == 'ActionListElement':
@@ -72,23 +69,6 @@ def toSEFL(node):
         print "Allocate('" + node.name + "', " + str(node.type.size) + ")"
     elif node.Node_Type == 'ExpressionValue':
         toSEFL(node.expression) 
-    elif node.Node_Type == 'IndexedVector<ActionListElement>':
-        pass
-    elif node.Node_Type == 'IndexedVector<Declaration>':
-        for v in node.vec:
-            toSEFL(v) 
-    elif node.Node_Type == 'IndexedVector<Parameter>':
-        for v in node.vec:
-            toSEFL(v) 
-    elif node.Node_Type == 'IndexedVector<Property>':
-        for v in node.vec:
-            toSEFL(v) 
-    elif node.Node_Type == 'IndexedVector<StructField>':
-        for v in node.vec:
-            toSEFL(v) 
-    elif node.Node_Type == 'IndexedVector<Type_Var>':
-        for v in node.vec:
-            toSEFL(v) 
     elif node.Node_Type == 'Member':
         toSEFL(node.expr)
     elif node.Node_Type == 'MethodCallExpression':
@@ -96,7 +76,7 @@ def toSEFL(node):
     elif node.Node_Type == 'MethodCallStatement':
         toSEFL(node.methodCall)
     elif node.Node_Type == 'NameMap<Property>':
-        pass
+        pass    
     elif node.Node_Type == 'P4Action':
         toSEFL(node.body)
     elif node.Node_Type == 'P4Table':
@@ -114,7 +94,7 @@ def toSEFL(node):
     elif node.Node_Type == 'StringLiteral':
         pass
     elif node.Node_Type == 'StructField':
-        pass
+        print "Allocate('" + node.name + "', " + str(node.type.size) + ")"
     elif node.Node_Type == 'TableProperties':
         toSEFL(node.properties)
     elif node.Node_Type == 'TypeParameters':
@@ -137,6 +117,23 @@ def toSEFL(node):
         toSEFL(node.table)
     elif node.Node_Type == 'Type_Unknown':
         pass
+    elif node.Node_Type == 'Type_Error':
+        pass
+    elif node.Node_Type == 'Type_Extern':
+        pass
+    elif node.Node_Type == 'Declaration_MatchKind':
+        pass
+    elif node.Node_Type == 'Type_Header':
+        toSEFL(node.fields)
+    elif node.Node_Type == 'P4Parser':
+        toSEFL(node.states)
+    elif node.Node_Type == 'Type_Parser':
+        pass
+    elif node.Node_Type == 'ParserState':
+        toSEFL(node.components) 
+    elif 'IndexedVector' in node.Node_Type:
+        for v in node.vec:
+            toSEFL(v) 
     else:
         raise ValueError('Unknown node type: ' + node.Node_Type)
 
