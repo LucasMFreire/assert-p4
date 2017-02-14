@@ -1,6 +1,6 @@
 
 def toSEFL(node):
-    print str(node.Node_ID) + ": " + node.Node_Type
+    #print str(node.Node_ID) + ": " + node.Node_Type
     if 'IndexedVector' in node.Node_Type:
         for v in node.vec:
             toSEFL(v)
@@ -26,17 +26,26 @@ def ActionList(node):
 def ActionListElement(node):
     pass
 
+def Add(node):
+    return add(node)
+
 def Annotation(node):
     pass
 
 def Annotations(node):
     pass
 
+def ArrayIndex(node):
+    pass
+
 def AssignmentStatement(node):
     assign(node)
 
+def BoolLiteral(node):
+    pass
+
 def Constant(node):
-    return node.value
+    return "ConstantValue(" + str(node.value) + ")"
 
 def ConstructorCallExpression(node):
     pass
@@ -47,11 +56,23 @@ def Declaration_Instance(node):
 def Declaration_Variable(node):
     allocate(node)
 
+def EmptyStatement(node):
+    pass
+
 def ExpressionValue(node):
     toSEFL(node.expression) 
 
+def Grt(node):
+    return greater(node)
+
+def IfStatement(node):
+    ifStatement(node)
+
 def Member(node):
     toSEFL(node.expr)
+
+def Method(node):
+    toSEFL(node.type)
 
 def MethodCallExpression(node):
     toSEFL(node.method)
@@ -88,6 +109,9 @@ def StringLiteral(node):
 
 def StructField(node):
     allocate(node)
+
+def SwitchStatement(node):
+    pass
 
 def TableProperties(node):
     toSEFL(node.properties)
@@ -148,9 +172,20 @@ def ParserState(node):
 
 ########### HELPER FUNCTIONS ###########
 
+def ifStatement(node):
+    print "If(" + str(toSEFL(node.condition)) + ", " + str(toSEFL(node.ifTrue)) + ", " + str(toSEFL(node.ifFalse)) + ")"
+
+def greater(node):
+    return str(toSEFL(node.left)) + " > " + str(toSEFL(node.right))  
+
+def add(node):
+    return str(toSEFL(node.left)) + " + " + str(toSEFL(node.right))   
+
 def allocate(node):
     if node.type.Node_Type == 'Type_Bits':
         print "Allocate('" + node.name + "', " + str(node.type.size) + ")"
+    elif node.type.Node_Type == 'Type_Boolean':
+        print "Allocate('" + node.name + "', 1)" #assuming boolean size is 1 bit
     elif node.type.Node_Type == 'Type_Name':
         pass
     else:

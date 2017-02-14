@@ -1,0 +1,72 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ActionList	src/Translations.py	/^def ActionList(node):$/;"	kind:function	line:23
+ActionListElement	src/Translations.py	/^def ActionListElement(node):$/;"	kind:function	line:26
+Add	src/Translations.py	/^def Add(node):$/;"	kind:function	line:29
+Annotation	src/Translations.py	/^def Annotation(node):$/;"	kind:function	line:32
+Annotations	src/Translations.py	/^def Annotations(node):$/;"	kind:function	line:35
+ArrayIndex	src/Translations.py	/^def ArrayIndex(node):$/;"	kind:function	line:38
+AssignmentStatement	src/Translations.py	/^def AssignmentStatement(node):$/;"	kind:function	line:41
+BlockStatement	src/Translations.py	/^def BlockStatement(node):$/;"	kind:function	line:20
+BoolLiteral	src/Translations.py	/^def BoolLiteral(node):$/;"	kind:function	line:44
+Constant	src/Translations.py	/^def Constant(node):$/;"	kind:function	line:47
+ConstructorCallExpression	src/Translations.py	/^def ConstructorCallExpression(node):$/;"	kind:function	line:50
+Declaration_Instance	src/Translations.py	/^def Declaration_Instance(node):$/;"	kind:function	line:53
+Declaration_MatchKind	src/Translations.py	/^def Declaration_MatchKind(node):$/;"	kind:function	line:149
+Declaration_Variable	src/Translations.py	/^def Declaration_Variable(node):$/;"	kind:function	line:56
+EmptyStatement	src/Translations.py	/^def EmptyStatement(node):$/;"	kind:function	line:169
+ExpressionValue	src/Translations.py	/^def ExpressionValue(node):$/;"	kind:function	line:59
+Grt	src/Translations.py	/^def Grt(node):$/;"	kind:function	line:62
+IfStatement	src/Translations.py	/^def IfStatement(node):$/;"	kind:function	line:65
+Member	src/Translations.py	/^def Member(node):$/;"	kind:function	line:68
+Method	src/Translations.py	/^def Method(node):$/;"	kind:function	line:71
+MethodCallExpression	src/Translations.py	/^def MethodCallExpression(node):$/;"	kind:function	line:74
+MethodCallStatement	src/Translations.py	/^def MethodCallStatement(node):$/;"	kind:function	line:77
+NameMapProperty	src/Translations.py	/^def NameMapProperty(node):$/;"	kind:function	line:80
+Node	src/Node.py	/^class Node(object):$/;"	kind:class	line:12
+Node.py	src/Node.py	1;"	kind:file	line:1
+NodeFactory	src/Node.py	/^def NodeFactory(node):$/;"	kind:function	line:4
+P4Action	src/Translations.py	/^def P4Action(node):$/;"	kind:function	line:83
+P4Control	src/Translations.py	/^def P4Control(node):$/;"	kind:function	line:15
+P4Parser	src/Translations.py	/^def P4Parser(node):$/;"	kind:function	line:155
+P4Program	src/Translations.py	/^def P4Program(node):$/;"	kind:function	line:12
+P4Table	src/Translations.py	/^def P4Table(node):$/;"	kind:function	line:86
+P4_to_SEFL.py	src/P4_to_SEFL.py	1;"	kind:file	line:1
+Parameter	src/Translations.py	/^def Parameter(node):$/;"	kind:function	line:89
+ParameterList	src/Translations.py	/^def ParameterList(node):$/;"	kind:function	line:92
+ParserState	src/Translations.py	/^def ParserState(node):$/;"	kind:function	line:164
+Path	src/Translations.py	/^def Path(node):$/;"	kind:function	line:95
+PathExpression	src/Translations.py	/^def PathExpression(node):$/;"	kind:function	line:98
+Property	src/Translations.py	/^def Property(node):$/;"	kind:function	line:101
+StringLiteral	src/Translations.py	/^def StringLiteral(node):$/;"	kind:function	line:104
+StructField	src/Translations.py	/^def StructField(node):$/;"	kind:function	line:107
+TableProperties	src/Translations.py	/^def TableProperties(node):$/;"	kind:function	line:110
+Translations.py	src/Translations.py	1;"	kind:file	line:1
+TypeParameters	src/Translations.py	/^def TypeParameters(node):$/;"	kind:function	line:113
+Type_Action	src/Translations.py	/^def Type_Action(node):$/;"	kind:function	line:116
+Type_ActionEnum	src/Translations.py	/^def Type_ActionEnum(node):$/;"	kind:function	line:119
+Type_Control	src/Translations.py	/^def Type_Control(node):$/;"	kind:function	line:122
+Type_Enum	src/Translations.py	/^def Type_Enum(node):$/;"	kind:function	line:158
+Type_Error	src/Translations.py	/^def Type_Error(node):$/;"	kind:function	line:143
+Type_Extern	src/Translations.py	/^def Type_Extern(node):$/;"	kind:function	line:146
+Type_Header	src/Translations.py	/^def Type_Header(node):$/;"	kind:function	line:152
+Type_Method	src/Translations.py	/^def Type_Method(node):$/;"	kind:function	line:125
+Type_Name	src/Translations.py	/^def Type_Name(node):$/;"	kind:function	line:128
+Type_Package	src/Translations.py	/^def Type_Package(node):$/;"	kind:function	line:131
+Type_Parser	src/Translations.py	/^def Type_Parser(node):$/;"	kind:function	line:161
+Type_Struct	src/Translations.py	/^def Type_Struct(node):$/;"	kind:function	line:134
+Type_Table	src/Translations.py	/^def Type_Table(node):$/;"	kind:function	line:137
+Type_Unknown	src/Translations.py	/^def Type_Unknown(node):$/;"	kind:function	line:140
+__init__	src/Node.py	/^    def __init__(self, node):$/;"	kind:member	line:14
+add	src/Translations.py	/^def add(node):$/;"	kind:function	line:178
+allNodes	src/Node.py	/^allNodes = {}$/;"	kind:variable	line:2
+allocate	src/Translations.py	/^def allocate(node):$/;"	kind:function	line:181
+assign	src/Translations.py	/^def assign(node):$/;"	kind:function	line:191
+greater	src/Translations.py	/^def greater(node):$/;"	kind:function	line:175
+ifStatement	src/Translations.py	/^def ifStatement(node):$/;"	kind:function	line:172
+program	src/P4_to_SEFL.py	/^    program = json.load(data_file)$/;"	kind:variable	line:7
+toSEFL	src/Translations.py	/^def toSEFL(node):$/;"	kind:function	line:2
