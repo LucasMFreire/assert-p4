@@ -1,99 +1,124 @@
 
+blocks = []
+
+def run(node):
+    returnString = ""
+    program = toSEFL(node)
+    for block in blocks:
+        returnString = returnString + block
+    returnString = returnString + program 
+    return returnString
+    
+
 def toSEFL(node):
-    #print str(node.Node_ID) + ": " + node.Node_Type
-    if 'IndexedVector' in node.Node_Type:
+    print str(node.Node_ID) + ": " + node.Node_Type
+    if 'Vector' in node.Node_Type:
+        returnString = ""
         for v in node.vec:
-            toSEFL(v)
+            returnString = returnString + toSEFL(v) + "\n"
+        return returnString
     else:
         return globals()[node.Node_Type](node) #calls corresponding type function according to node type
 
 ########### TYPE FUNCTIONS ###########
 
 def P4Program(node):
-    toSEFL(node.declarations) 
+    return toSEFL(node.declarations)
 
 def P4Control(node):
-    toSEFL(node.type.applyParams)
-    toSEFL(node.controlLocals)
-    toSEFL(node.body) 
+    returnString = ""
+    returnString = returnString + toSEFL(node.type.applyParams)
+    returnString = returnString + toSEFL(node.controlLocals)
+    returnString = returnString + toSEFL(node.body)
+    return returnString
 
 def BlockStatement(node):
-    toSEFL(node.components)
+    blockName = "block" + str(node.Node_ID)
+    components = ""
+    for v in node.components.vec:
+        components = components + "\t" + toSEFL(v) + ",\n"
+    components = components[:-2]
+    block = "val " + blockName + " = InstructionBlock(\n" + components + "\n)\n\n"
+    blocks.append(block)
+    return blockName
 
 def ActionList(node):
-    pass 
+    return "<ActionList>" + str(node.Node_ID) + "\n" 
 
 def ActionListElement(node):
-    pass
+    return "<ActionListElement>" + str(node.Node_ID) + "\n" 
 
 def Add(node):
     return add(node)
 
 def Annotation(node):
-    pass
+    return "<Annotation>" + str(node.Node_ID) + "\n" 
 
 def Annotations(node):
-    pass
+    return "<Annotations>" + str(node.Node_ID) + "\n" 
 
 def ArrayIndex(node):
-    pass
+    return "<ArrayIndex>" + str(node.Node_ID) + "\n" 
 
 def AssignmentStatement(node):
-    assign(node)
+    return assign(node)
 
 def BoolLiteral(node):
-    pass
+    return node.value
 
 def Constant(node):
     return "ConstantValue(" + str(node.value) + ")"
 
 def ConstructorCallExpression(node):
-    pass
+    return "<ConstructorCallExpression>" + str(node.Node_ID) + "\n" 
 
 def Declaration_Instance(node):
-    pass
+    return "<Declaration_Instance>" + str(node.Node_ID) + "\n" 
 
 def Declaration_Variable(node):
-    allocate(node)
+    return allocate(node)
 
 def EmptyStatement(node):
-    pass
+    return "<EmptyStatement>" + str(node.Node_ID) + "\n"
 
 def ExpressionValue(node):
-    toSEFL(node.expression) 
+    return toSEFL(node.expression) 
 
 def Grt(node):
     return greater(node)
 
 def IfStatement(node):
-    ifStatement(node)
+    return ifStatement(node)
+
+def LNot(node):
+    return "!" + toSEFL(node.expr)
 
 def Member(node):
-    toSEFL(node.expr)
+    return toSEFL(node.expr)
 
 def Method(node):
-    toSEFL(node.type)
+    return toSEFL(node.type)
 
 def MethodCallExpression(node):
-    toSEFL(node.method)
+    return toSEFL(node.method)
 
 def MethodCallStatement(node):
-    toSEFL(node.methodCall)
+    return toSEFL(node.methodCall)
 
 def NameMapProperty(node):
-    pass    
+    return "<NameMapProperty>" + str(node.Node_ID) + "\n"
 
 def P4Action(node):
-    toSEFL(node.body)
+    return "val action_" + str(node.name) + " = InstructionBlock(\n\t" + toSEFL(node.body) + ")\n\n"
 
 def P4Table(node):
-    toSEFL(node.properties)
+    return toSEFL(node.properties)
 
 def Parameter(node):
-    allocate(node)
+    return allocate(node)
 
 def ParameterList(node):
-    toSEFL(node.parameters)
+    return toSEFL(node.parameters)
 
 def Path(node):
     return node.name
@@ -102,94 +127,107 @@ def PathExpression(node):
     return toSEFL(node.path)
 
 def Property(node):
-    toSEFL(node.value)
+    return toSEFL(node.value)
 
 def StringLiteral(node):
-    pass
+    return "<StringLiteral>" + str(node.Node_ID) + "\n"
 
 def StructField(node):
-    allocate(node)
+    return allocate(node)
+
+def SwitchCase(node):
+    return toSEFL(node.label)
 
 def SwitchStatement(node):
-    pass
+    returnString = ""
+    returnString = returnString + toSEFL(node.expression)
+    returnString = returnString + toSEFL(node.cases)
+    return returnString
 
 def TableProperties(node):
-    toSEFL(node.properties)
+    return toSEFL(node.properties)
 
 def TypeParameters(node):
-    pass
+    return "<TypeParameters>" + str(node.Node_ID) + "\n"
 
 def Type_Action(node):
-    pass
+    return "<Type_Action>" + str(node.Node_ID) + "\n"
 
 def Type_ActionEnum(node):
-    pass
+    return "<Type_ActionEnum>" + str(node.Node_ID) + "\n"
 
 def Type_Control(node):
-    pass
+    return "<Type_Control>" + str(node.Node_ID) + "\n"
 
 def Type_Method(node):
-    pass
+    return "<Type_Method>" + str(node.Node_ID) + "\n"
 
 def Type_Name(node):
-    pass
+    return "<Type_Name>" + str(node.Node_ID) + "\n"
 
 def Type_Package(node):
-    pass
+    return "<Type_Package>" + str(node.Node_ID) + "\n"
 
 def Type_Struct(node):
-    pass
+    return "<Type_Struct>" + str(node.Node_ID) + "\n"
 
 def Type_Table(node):
-    toSEFL(node.table)
+    return toSEFL(node.table)
 
 def Type_Unknown(node):
-    pass
+    return "<Type_Unknown>" + str(node.Node_ID) + "\n"
 
 def Type_Error(node):
-    pass
+    return "<Type_Error>" + str(node.Node_ID) + "\n"
 
 def Type_Extern(node):
-    pass
+    return "<Type_Extern>" + str(node.Node_ID) + "\n"
 
 def Declaration_MatchKind(node):
-    pass
+    return "<Declaration_MatchKind>" + str(node.Node_ID) + "\n"
 
 def Type_Header(node):
-    toSEFL(node.fields)
+    return toSEFL(node.fields)
 
 def P4Parser(node):
-    toSEFL(node.states)
+    returnString = ""
+    returnString = returnString + toSEFL(node.parserLocals)
+    returnString = returnString + toSEFL(node.states)
+    return returnString 
 
 def Type_Enum(node):
-    pass
+    return "<Type_Enum>" + str(node.Node_ID) + "\n"
 
 def Type_Parser(node):
-    pass
+    return "<Type_Parser>" + str(node.Node_ID) + "\n"
 
 def ParserState(node):
-    toSEFL(node.components) 
+    return toSEFL(node.components)
 
 ########### HELPER FUNCTIONS ###########
 
 def ifStatement(node):
-    print "If(" + str(toSEFL(node.condition)) + ", " + str(toSEFL(node.ifTrue)) + ", " + str(toSEFL(node.ifFalse)) + ")"
+    return "If(" + str(toSEFL(node.condition)) + ", " + str(toSEFL(node.ifTrue)) + ", " + str(toSEFL(node.ifFalse)) + ")"
 
 def greater(node):
-    return str(toSEFL(node.left)) + " > " + str(toSEFL(node.right))  
+    return str(toSEFL(node.left)) + " > " + str(toSEFL(node.right))
 
 def add(node):
-    return str(toSEFL(node.left)) + " + " + str(toSEFL(node.right))   
+    return str(toSEFL(node.left)) + " + " + str(toSEFL(node.right))
 
 def allocate(node):
+    returnString = ""
     if node.type.Node_Type == 'Type_Bits':
-        print "Allocate('" + node.name + "', " + str(node.type.size) + ")"
+        returnString = "Allocate('" + node.name + "', " + str(node.type.size) + ")"
     elif node.type.Node_Type == 'Type_Boolean':
-        print "Allocate('" + node.name + "', 1)" #assuming boolean size is 1 bit
+        returnString = "Allocate('" + node.name + "', 1)" #assuming boolean size is 1 bit
     elif node.type.Node_Type == 'Type_Name':
         pass
+    elif node.type.Node_Type == 'Type_Stack':
+        returnString = "// " + str(node.type.elementType.path.name) + "[" + str(node.type.size.value) + "] " + str(node.name)
     else:
         raise ValueError('Allocating unknown node type: ' + node.type.Node_Type)
+    return returnString
 
 def assign(node):
-    print "Assign('" + str(toSEFL(node.left)) + "', " + str(toSEFL(node.right)) + ")"  
+    return "Assign('" + str(toSEFL(node.left)) + "', " + str(toSEFL(node.right)) + ")"
