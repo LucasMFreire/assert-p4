@@ -129,6 +129,9 @@ def PathExpression(node):
 def Property(node):
     return toSEFL(node.value)
 
+def SelectExpression(node):
+    return "<SelectExpression>" + str(node.Node_ID)
+
 def StringLiteral(node):
     return "<StringLiteral>" + str(node.Node_ID) + "\n"
 
@@ -136,12 +139,11 @@ def StructField(node):
     return allocate(node)
 
 def SwitchCase(node):
-    return toSEFL(node.label)
+    return toSEFL(node.statement)
 
 def SwitchStatement(node):
-    returnString = ""
-    returnString = returnString + toSEFL(node.expression)
-    returnString = returnString + toSEFL(node.cases)
+    switchCases = toSEFL(node.cases).replace("\n", ",")
+    returnString = "Fork(InstructionBlock(), " + switchCases[:-1] + ")"
     return returnString
 
 def TableProperties(node):
@@ -202,7 +204,15 @@ def Type_Parser(node):
     return "<Type_Parser>" + str(node.Node_ID) + "\n"
 
 def ParserState(node):
-    return toSEFL(node.components)
+    components = ""
+    for v in node.components.vec:
+        components = components + "\t" + toSEFL(v) + ",\n"
+    parser = "val " + node.name + " = InstructionBlock(\n" + components + "\t" + toSEFL(node.selectExpression) + "\n)\n\n"
+    return parser
+
+
+    returnString = "val parserState_" + node.name + " = InstructionBlock(\n" + toSEFL(node.components) + ")\n"
+    return returnString
 
 ########### HELPER FUNCTIONS ###########
 
