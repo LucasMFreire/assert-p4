@@ -11,7 +11,7 @@ def run(node):
     
 
 def toSEFL(node):
-    print str(node.Node_ID) + ": " + node.Node_Type
+    #print str(node.Node_ID) + ": " + node.Node_Type
     if 'Vector' in node.Node_Type:
         returnString = ""
         for v in node.vec:
@@ -130,7 +130,17 @@ def Property(node):
     return toSEFL(node.value)
 
 def SelectExpression(node):
-    return "<SelectExpression>" + str(node.Node_ID)
+    expressions = node.select.components.vec
+    exp = []
+    for expression in expressions:
+        if  expression.method.member == "isValid":
+            exp.append("validityBit_" + expression.method.expr.path.name)
+
+    cases = node.selectCases.vec
+    returnString = ""
+    for case in cases:
+        returnString = returnString + "If(" + str(exp[0]) + " == " + str(case.keyset.value) + ", " + case.state.path.name + "),\n\t"
+    return returnString
 
 def StringLiteral(node):
     return "<StringLiteral>" + str(node.Node_ID) + "\n"
@@ -189,7 +199,9 @@ def Declaration_MatchKind(node):
     return "<Declaration_MatchKind>" + str(node.Node_ID) + "\n"
 
 def Type_Header(node):
-    return toSEFL(node.fields)
+    validityBit = "Allocate('validityBit_" + node.name + "', 1),\n"
+    setValidityBitToFalse = "Assign('validityBit_" + node.name + "', False),\n"
+    return validityBit + setValidityBitToFalse + toSEFL(node.fields)
 
 def P4Parser(node):
     returnString = ""
