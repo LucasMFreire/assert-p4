@@ -1,12 +1,13 @@
 
 blocks = []
+headers = []
 
 def run(node):
     returnString = ""
     program = toSEFL(node)
     for block in blocks:
-        returnString = returnString + block
-    returnString = returnString + program 
+        returnString += block
+    returnString += program 
     return returnString
     
 
@@ -15,7 +16,7 @@ def toSEFL(node):
     if 'Vector' in node.Node_Type:
         returnString = ""
         for v in node.vec:
-            returnString = returnString + toSEFL(v) + "\n"
+            returnString += str(toSEFL(v)) + "\n"
         return returnString
     else:
         return globals()[node.Node_Type](node) #calls corresponding type function according to node type
@@ -27,9 +28,9 @@ def P4Program(node):
 
 def P4Control(node):
     returnString = ""
-    returnString = returnString + toSEFL(node.type.applyParams)
-    returnString = returnString + toSEFL(node.controlLocals)
-    returnString = returnString + toSEFL(node.body)
+    returnString += toSEFL(node.type.applyParams)
+    returnString += toSEFL(node.controlLocals)
+    returnString += toSEFL(node.body)
     return returnString
 
 def BlockStatement(node):
@@ -100,7 +101,18 @@ def Method(node):
     return toSEFL(node.type)
 
 def MethodCallExpression(node):
-    return toSEFL(node.method)
+    returnString = ""
+    if hasattr(node.method, 'member') and node.method.member == "extract":
+        headerToExtract = node.arguments.vec[0].path.name
+        returnString += "// extract " + headerToExtract + "\n"
+        for header in headers:
+            if header[0] == node.typeArguments.vec[0].path.name:
+                returnString += "\tAssign('validityBit_" + headerToExtract + "', True),\n"
+                for field in header[1]:
+                    returnString += "\tAssign(" + field.name + "_" + headerToExtract + ", SymbolicValue()),\n"
+        return returnString
+    else:
+        return toSEFL(node.method)
 
 def MethodCallStatement(node):
     return toSEFL(node.methodCall)
@@ -139,7 +151,7 @@ def SelectExpression(node):
     cases = node.selectCases.vec
     returnString = ""
     for case in cases:
-        returnString = returnString + "If(" + str(exp[0]) + " == " + str(case.keyset.value) + ", " + case.state.path.name + "),\n\t"
+        returnString += "If(" + str(exp[0]) + " == " + str(case.keyset.value) + ", " + case.state.path.name + "),\n\t"
     return returnString
 
 def StringLiteral(node):
@@ -199,14 +211,17 @@ def Declaration_MatchKind(node):
     return "<Declaration_MatchKind>" + str(node.Node_ID) + "\n"
 
 def Type_Header(node):
-    validityBit = "Allocate('validityBit_" + node.name + "', 1),\n"
-    setValidityBitToFalse = "Assign('validityBit_" + node.name + "', False),\n"
-    return validityBit + setValidityBitToFalse + toSEFL(node.fields)
+    headerName = node.name
+    fields = []
+    for field in node.fields.vec:
+        fields.append(field)
+    headerTuple = (headerName, fields)
+    headers.append(headerTuple)
 
 def P4Parser(node):
-    returnString = ""
-    returnString = returnString + toSEFL(node.parserLocals)
-    returnString = returnString + toSEFL(node.states)
+    returnString = declareParameters(node)
+    returnString += toSEFL(node.parserLocals)
+    returnString += toSEFL(node.states)
     return returnString 
 
 def Type_Enum(node):
@@ -219,7 +234,10 @@ def ParserState(node):
     components = ""
     for v in node.components.vec:
         components = components + "\t" + toSEFL(v) + ",\n"
-    parser = "val " + node.name + " = InstructionBlock(\n" + components + "\t" + toSEFL(node.selectExpression) + "\n)\n\n"
+    expression = ""
+    if hasattr(node, 'selectExpression'):
+        expression = toSEFL(node.selectExpression)
+    parser = "val " + node.name + " = InstructionBlock(\n" + components + "\t" + expression + "\n)\n\n"
     return parser
 
 
@@ -227,6 +245,18 @@ def ParserState(node):
     return returnString
 
 ########### HELPER FUNCTIONS ###########
+
+def declareParameters(node):
+    returnString = ""
+    for param in node.type.applyParams.parameters.vec:
+        if param.direction == "out":
+            for header in headers:
+                if header[0] == param.type.path.name:
+                    returnString += "Allocate('validityBit_" + param.name + "', 1),\n"
+                    returnString += "Assign('validityBit_" + param.name + "', False),\n"
+                    for field in header[1]:
+                         returnString += allocate(field, "_" + param.name) + ",\n"
+    return returnString
 
 def ifStatement(node):
     return "If(" + str(toSEFL(node.condition)) + ", " + str(toSEFL(node.ifTrue)) + ", " + str(toSEFL(node.ifFalse)) + ")"
@@ -237,12 +267,12 @@ def greater(node):
 def add(node):
     return str(toSEFL(node.left)) + " + " + str(toSEFL(node.right))
 
-def allocate(node):
+def allocate(node, appendName = ""):
     returnString = ""
     if node.type.Node_Type == 'Type_Bits':
-        returnString = "Allocate('" + node.name + "', " + str(node.type.size) + ")"
+        returnString = "Allocate('" + node.name + appendName +  "', " + str(node.type.size) + ")"
     elif node.type.Node_Type == 'Type_Boolean':
-        returnString = "Allocate('" + node.name + "', 1)" #assuming boolean size is 1 bit
+        returnString = "Allocate('" + node.name + appendName + "', 1)" #assuming boolean size is 1 bit
     elif node.type.Node_Type == 'Type_Name':
         pass
     elif node.type.Node_Type == 'Type_Stack':
