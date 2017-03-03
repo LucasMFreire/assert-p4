@@ -1,6 +1,7 @@
 
 blocks = []
 headers = []
+currentPacketAllocationPosition = 0
 
 def run(node):
     returnString = ""
@@ -77,6 +78,15 @@ def Declaration_Instance(node):
     return "<Declaration_Instance>" + str(node.Node_ID) + "\n" 
 
 def Declaration_Variable(node):
+    if  node.type.Node_Type == 'Type_Name':
+        returnString = ""
+        for header in headers:
+            if header[0] == node.type.path.name:
+                returnString += "Allocate('validityBit_" + node.name + "'),\n"
+                returnString += "Assign('validityBit_" + node.name + "', False),\n"
+                for field in header[1]:
+                    returnString += "Allocate('" + field.name + "_" + node.name + "'),"
+        return returnString
     return allocate(node)
 
 def EmptyStatement(node):
@@ -103,14 +113,15 @@ def Method(node):
 def MethodCallExpression(node):
     returnString = ""
     if hasattr(node.method, 'member') and node.method.member == "extract":
-        headerToExtract = node.arguments.vec[0].path.name
-        returnString += "// extract " + headerToExtract + "\n"
-        for header in headers:
-            if header[0] == node.typeArguments.vec[0].path.name:
-                returnString += "\tAssign('validityBit_" + headerToExtract + "', True),\n"
-                for field in header[1]:
-                    returnString += "\tAssign(" + field.name + "_" + headerToExtract + ", SymbolicValue()),\n"
-        returnString = returnString[:-2]
+        if hasattr(node.arguments.vec[0], 'path'):
+            headerToExtract = node.arguments.vec[0].path.name
+            returnString += "// extract " + headerToExtract + "\n"
+            for header in headers:
+                if header[0] == node.typeArguments.vec[0].path.name:
+                    returnString += "\tAssign('validityBit_" + headerToExtract + "', True),\n"
+                    for field in header[1]:
+                        returnString += "\tAssign(Tag('" + field.name + "_" + headerToExtract + "'), SymbolicValue()),\n"
+            returnString = returnString[:-2]
         return returnString
     else:
         return toSEFL(node.method)
@@ -146,13 +157,20 @@ def SelectExpression(node):
     expressions = node.select.components.vec
     exp = []
     for expression in expressions:
-        if  expression.method.member == "isValid":
-            exp.append("validityBit_" + expression.method.expr.path.name)
+        if expression.Node_Type == 'Member':
+            exp.append(expression.member + "_" + expression.expr.path.name)
+        if  expression.Node_Type == "MethodCallStatement":
+            if expression.method.member == "isValid":
+                exp.append("validityBit_" + expression.method.expr.path.name)
 
     cases = node.selectCases.vec
     returnString = ""
     for case in cases:
-        returnString += "If(" + str(exp[0]) + " == " + str(case.keyset.value) + ", " + case.state.path.name + "),\n\t"
+        if case.keyset.Node_Type == 'DefaultExpression':
+            returnString += case.state.path.name + ")\n\t"
+        else:
+            returnString += "If(" + str(exp[0]) + " == " + str(case.keyset.value) + ", " + case.state.path.name + ",\n\t"
+    #close with ) according to cases length
     return returnString
 
 def StringLiteral(node):
@@ -251,13 +269,13 @@ def ParserState(node):
 def declareParameters(node):
     returnString = ""
     for param in node.type.applyParams.parameters.vec:
-        if param.direction == "out":
+        if param.direction == "out" and param.type.Node_Type == 'Type_Name':
             for header in headers:
                 if header[0] == param.type.path.name:
-                    returnString += "Allocate('validityBit_" + param.name + "', 1),\n"
+                    returnString += "Allocate('validityBit_" + param.name + "'),\n"
                     returnString += "Assign('validityBit_" + param.name + "', False),\n"
                     for field in header[1]:
-                         returnString += allocate(field, "_" + param.name) + ",\n"
+                        returnString += allocateHeader(field, "_" + param.name) + ",\n"
     return returnString + "\n"
 
 def ifStatement(node):
@@ -269,19 +287,26 @@ def greater(node):
 def add(node):
     return str(toSEFL(node.left)) + " + " + str(toSEFL(node.right))
 
-def allocate(node, appendName = ""):
+def allocateHeader(node, appendName):
     returnString = ""
+    returnString += "CreateTag('" + node.name + appendName +  "', " + str(currentPacketAllocationPosition) + "),\n"
+    global currentPacketAllocationPosition
     if node.type.Node_Type == 'Type_Bits':
-        returnString = "Allocate('" + node.name + appendName +  "', " + str(node.type.size) + ")"
+        currentPacketAllocationPosition += node.type.size
+        returnString += "Allocate(Tag('" + node.name + appendName +  "'), " + str(node.type.size) + ")"
     elif node.type.Node_Type == 'Type_Boolean':
-        returnString = "Allocate('" + node.name + appendName + "', 1)" #assuming boolean size is 1 bit
+        currentPacketAllocationPosition += 1
+        returnString += "Allocate(Tag('" + node.name + appendName + "'), 1)" #assuming boolean size is 1 bit
     elif node.type.Node_Type == 'Type_Name':
         pass
     elif node.type.Node_Type == 'Type_Stack':
-        returnString = "// " + str(node.type.elementType.path.name) + "[" + str(node.type.size.value) + "] " + str(node.name)
+        returnString += "// " + str(node.type.elementType.path.name) + "[" + str(node.type.size.value) + "] " + str(node.name)
     else:
         raise ValueError('Allocating unknown node type: ' + node.type.Node_Type)
     return returnString
+
+def allocate(node):
+    return "Allocate('" + node.name + "')"
 
 def assign(node):
     return "Assign('" + str(toSEFL(node.left)) + "', " + str(toSEFL(node.right)) + ")"
