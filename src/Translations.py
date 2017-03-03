@@ -16,7 +16,7 @@ def toSEFL(node):
     if 'Vector' in node.Node_Type:
         returnString = ""
         for v in node.vec:
-            returnString += str(toSEFL(v)) + "\n"
+            returnString += toSEFL(v) + "\n"
         return returnString
     else:
         return globals()[node.Node_Type](node) #calls corresponding type function according to node type
@@ -110,6 +110,7 @@ def MethodCallExpression(node):
                 returnString += "\tAssign('validityBit_" + headerToExtract + "', True),\n"
                 for field in header[1]:
                     returnString += "\tAssign(" + field.name + "_" + headerToExtract + ", SymbolicValue()),\n"
+        returnString = returnString[:-2]
         return returnString
     else:
         return toSEFL(node.method)
@@ -217,6 +218,7 @@ def Type_Header(node):
         fields.append(field)
     headerTuple = (headerName, fields)
     headers.append(headerTuple)
+    return ""
 
 def P4Parser(node):
     returnString = declareParameters(node)
@@ -256,7 +258,7 @@ def declareParameters(node):
                     returnString += "Assign('validityBit_" + param.name + "', False),\n"
                     for field in header[1]:
                          returnString += allocate(field, "_" + param.name) + ",\n"
-    return returnString
+    return returnString + "\n"
 
 def ifStatement(node):
     return "If(" + str(toSEFL(node.condition)) + ", " + str(toSEFL(node.ifTrue)) + ", " + str(toSEFL(node.ifFalse)) + ")"
