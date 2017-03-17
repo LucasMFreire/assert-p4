@@ -45,7 +45,11 @@ def BlockStatement(node):
     return blockName
 
 def ActionList(node):
-    return "<ActionList>" + str(node.Node_ID) + "\n" 
+    #assuming every action will be forked
+    returnString = "\tFork("
+    for action in node.actionList.vec:
+        returnString += action.expression.method.path.name + ", "
+    return returnString[:-2] + ")"
 
 def ActionListElement(node):
     return "<ActionListElement>" + str(node.Node_ID) + "\n" 
@@ -66,7 +70,10 @@ def AssignmentStatement(node):
     return assign(node)
 
 def BoolLiteral(node):
-    return node.value
+    if node.value == "true":
+        return "ConstantValue(1)"
+    else:
+        return "ConstantValue(0)"
 
 def Constant(node):
     return "ConstantValue(" + str(node.value) + ")"
@@ -83,7 +90,7 @@ def Declaration_Variable(node):
         for header in headers:
             if header[0] == node.type.path.name:
                 returnString += "Allocate('validityBit_" + node.name + "'),\n"
-                returnString += "Assign('validityBit_" + node.name + "', False),\n"
+                returnString += "Assign('validityBit_" + node.name + "', ConstantValue(0)),\n"
                 for field in header[1]:
                     returnString += "Allocate('" + field.name + "_" + node.name + "'),"
         return returnString
@@ -91,6 +98,12 @@ def Declaration_Variable(node):
 
 def EmptyStatement(node):
     return "<EmptyStatement>" + str(node.Node_ID) + "\n"
+
+def Neq(node):
+    return "<Neq>" + str(node.Node_ID) + "\n"
+
+def Equ(node):
+    return "<Equ>" + str(node.Node_ID) + "\n"
 
 def ExpressionValue(node):
     return toSEFL(node.expression) 
@@ -101,11 +114,17 @@ def Grt(node):
 def IfStatement(node):
     return ifStatement(node)
 
+def Key(node):
+    returnString = "\t// keys: "
+    for key in node.keyElements.vec:
+            returnString += toSEFL(key.expression) + ", "
+    return returnString[:-2]
+
 def LNot(node):
     return "!" + toSEFL(node.expr)
 
 def Member(node):
-    return toSEFL(node.expr)
+    return toSEFL(node.expr) + "." + node.member
 
 def Method(node):
     return toSEFL(node.type)
@@ -118,7 +137,7 @@ def MethodCallExpression(node):
             returnString += "// extract " + headerToExtract + "\n"
             for header in headers:
                 if header[0] == node.typeArguments.vec[0].path.name:
-                    returnString += "\tAssign('validityBit_" + headerToExtract + "', True),\n"
+                    returnString += "\tAssign('validityBit_" + headerToExtract + "', ConstantValue(1)),\n"
                     for field in header[1]:
                         returnString += "\tAssign(Tag('" + field.name + "_" + headerToExtract + "'), SymbolicValue()),\n"
             returnString = returnString[:-2]
@@ -133,10 +152,14 @@ def NameMapProperty(node):
     return "<NameMapProperty>" + str(node.Node_ID) + "\n"
 
 def P4Action(node):
-    return "val action_" + str(node.name) + " = InstructionBlock(\n\t" + toSEFL(node.body) + ")\n\n"
+    actionData = ""
+    for param in node.parameters.parameters.vec:
+        if param.direction == "":
+            actionData += "Assign('" + param.name + "', SymbolicValue()),\n\t"
+    return "// Action\nval " + str(node.name) + " = InstructionBlock(\n\t" + actionData + toSEFL(node.body) + "\n)\n\n"
 
 def P4Table(node):
-    return toSEFL(node.properties)
+    return "//Table\nval " + str(node.name) + " = InstructionBlock(\n" + toSEFL(node.properties) + ")\n\n"
 
 def Parameter(node):
     return allocate(node)
@@ -151,14 +174,19 @@ def PathExpression(node):
     return toSEFL(node.path)
 
 def Property(node):
-    return toSEFL(node.value)
+    if node.name == "default_action":
+        return "\t// default_action " + toSEFL(node.value)
+    elif node.name == "size":
+        return "\t// size " + toSEFL(node.value)
+    else:
+        return toSEFL(node.value)
 
 def SelectExpression(node):
     expressions = node.select.components.vec
     exp = []
     for expression in expressions:
         if expression.Node_Type == 'Member':
-            exp.append(expression.member + "_" + expression.expr.path.name)
+            exp.append(expression.member + "_" + toSEFL(expression.expr))
         if  expression.Node_Type == "MethodCallStatement":
             if expression.method.member == "isValid":
                 exp.append("validityBit_" + expression.method.expr.path.name)
@@ -217,6 +245,9 @@ def Type_Struct(node):
 def Type_Table(node):
     return toSEFL(node.table)
 
+def Type_Typedef(node):
+    return "<Type_Typedef>" + str(node.Node_ID) + "\n"
+
 def Type_Unknown(node):
     return "<Type_Unknown>" + str(node.Node_ID) + "\n"
 
@@ -273,24 +304,35 @@ def declareParameters(node):
             for header in headers:
                 if header[0] == param.type.path.name:
                     returnString += "Allocate('validityBit_" + param.name + "'),\n"
-                    returnString += "Assign('validityBit_" + param.name + "', False),\n"
+                    returnString += "Assign('validityBit_" + param.name + "', ConstantValue(0)),\n"
                     for field in header[1]:
                         returnString += allocateHeader(field, "_" + param.name) + ",\n"
     return returnString + "\n"
 
 def ifStatement(node):
-    return "If(" + str(toSEFL(node.condition)) + ", " + str(toSEFL(node.ifTrue)) + ", " + str(toSEFL(node.ifFalse)) + ")"
+    condition = ""
+    if node.condition.Node_Type == 'PathExpression':
+        condition = formatATNode(node.condition) + ", :==:(ConstantValue(1))"
+    elif node.condition.Node_Type == 'LNot' and node.condition.expr.Node_Type == 'PathExpression':
+        condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
+    else:
+        condition = str(toSEFL(node.condition))
+    returnString = "If(Constrain(" + condition + "), " + str(toSEFL(node.ifTrue))
+    if hasattr(node, "ifFalse"):
+        returnString += ", " + str(toSEFL(node.ifFalse))
+    returnString += ")"
+    return returnString
 
 def greater(node):
     return str(toSEFL(node.left)) + " > " + str(toSEFL(node.right))
 
 def add(node):
-    return str(toSEFL(node.left)) + " + " + str(toSEFL(node.right))
+    return ":+:(" + formatATNode(node.left) + ", " + formatATNode(node.right) + ")"
 
 def allocateHeader(node, appendName):
     returnString = ""
-    returnString += "CreateTag('" + node.name + appendName +  "', " + str(currentPacketAllocationPosition) + "),\n"
     global currentPacketAllocationPosition
+    returnString += "CreateTag('" + node.name + appendName +  "', " + str(currentPacketAllocationPosition) + "),\n"
     if node.type.Node_Type == 'Type_Bits':
         currentPacketAllocationPosition += node.type.size
         returnString += "Allocate(Tag('" + node.name + appendName +  "'), " + str(node.type.size) + ")"
@@ -309,4 +351,23 @@ def allocate(node):
     return "Allocate('" + node.name + "')"
 
 def assign(node):
-    return "Assign('" + str(toSEFL(node.left)) + "', " + str(toSEFL(node.right)) + ")"
+    if node.right.Node_Type == "Equ":
+        returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :==:(" + str(toSEFL(node.right.right))  + ")), " + \
+                       "Assign('" + str(toSEFL(node.left)) + "', ConstantValue(1)), Assign('" + str(toSEFL(node.left)) + "', ConstantValue(0)))"
+    else:
+        #rightValue = ""
+        #if node.right.Node_Type == 'PathExpression':
+        #    rightValue = ":@('" + str(toSEFL(node.right)) + "')"
+        #else:
+        #    rightValue = str(toSEFL(node.right))
+
+        returnString = "Assign('" + str(toSEFL(node.left)) + "', " + formatATNode(node.right) + ")"
+    return returnString
+
+def formatATNode(node): # :@
+    value = ""
+    if node.Node_Type == 'PathExpression' or node.Node_Type == 'Member' :
+        value = ":@('" + str(toSEFL(node)) + "')"
+    else:
+        value = str(toSEFL(node))
+    return value

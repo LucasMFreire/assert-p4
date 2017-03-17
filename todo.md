@@ -9,4 +9,4 @@
 
 - instantiate parser parameters
 
-- look at [in, out] variables for allocation, other stuff should be metadata
+- look at packet_out variable for allocation, other stuff should be metadata
