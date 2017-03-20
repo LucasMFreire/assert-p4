@@ -78,54 +78,54 @@ val block100125 = InstructionBlock(
 )
 
 val block101784 = InstructionBlock(
-	tbl_Drop_action.apply,
-	tbl_act_0.apply
+	tbl_Drop_action,
+	tbl_act_0
 )
 
 val block101852 = InstructionBlock(
-	ipv4_match.apply,
-	tbl_act_1.apply,
-	If(Constrain(:@('tmp_17'), :==:(ConstantValue(1))), tbl_act_2.apply)
+	ipv4_match,
+	tbl_act_1,
+	If(Constrain(:@('tmp_17'), :==:(ConstantValue(1))), tbl_act_2)
 )
 
 val block101946 = InstructionBlock(
-	check_ttl.apply,
-	tbl_act_3.apply,
-	If(Constrain(:@('tmp_18'), :==:(ConstantValue(1))), tbl_act_4.apply)
+	check_ttl,
+	tbl_act_3,
+	If(Constrain(:@('tmp_18'), :==:(ConstantValue(1))), tbl_act_4)
 )
 
 val block102040 = InstructionBlock(
-	tbl_act_5.apply,
-	dmac_1.apply,
-	tbl_act_6.apply,
-	If(Constrain(:@('tmp_19'), :==:(ConstantValue(1))), tbl_act_7.apply)
+	tbl_act_5,
+	dmac_1,
+	tbl_act_6,
+	If(Constrain(:@('tmp_19'), :==:(ConstantValue(1))), tbl_act_7)
 )
 
 val block101748 = InstructionBlock(
-	tbl_act.apply,
+	tbl_act,
 	If(Constrain(:@('tmp_16'), :==:(ConstantValue(1))), block101784),
 	If(Constrain(:@('hasReturned_0'), :==:(ConstantValue(0))), block101852),
 	If(Constrain(:@('hasReturned_0'), :==:(ConstantValue(0))), block101946),
 	If(Constrain(:@('hasReturned_0'), :==:(ConstantValue(0))), block102040),
-	If(Constrain(:@('hasReturned_0'), :==:(ConstantValue(0))), smac_1.apply)
+	If(Constrain(:@('hasReturned_0'), :==:(ConstantValue(0))), smac_1)
 )
 
 val block100293 = InstructionBlock(
-	ck_2.clear,
+	//Extern: ck_2.clear,
 	Assign('p.ip.hdrChecksum', ConstantValue(0)),
-	ck_2.update,
-	Assign('tmp_20', ck_2.get),
+	//Extern: ck_2.update,
+	Assign('tmp_20', SymbolicValue()),
 	Assign('p.ip.hdrChecksum', :@('tmp_20'))
 )
 
 val block102281 = InstructionBlock(
-	tbl_act_8.apply
+	tbl_act_8
 )
 
 val block102217 = InstructionBlock(
-	b.emit,
+	//Extern: b.emit,
 	If(Constrain(p.ip.isValid), block102281),
-	b.emit
+	//Extern: b.emit
 )
 
 <Type_Error>16
@@ -183,9 +183,9 @@ val parse_ipv4 = InstructionBlock(
 	verify,
 	If(Constrain('p.ip.ihl', :==:(ConstantValue(5))), Assign('tmp_11', ConstantValue(1)), Assign('tmp_11', ConstantValue(0))),
 	verify,
-	ck.clear,
-	ck.update,
-	Assign('tmp_12', ck.get),
+	//Extern: ck.clear,
+	//Extern: ck.update,
+	Assign('tmp_12', SymbolicValue()),
 	If(Constrain('tmp_12', :==:(ConstantValue(0))), Assign('tmp_13', ConstantValue(1)), Assign('tmp_13', ConstantValue(0))),
 	Assign('tmp_14', :@('tmp_13')),
 	verify,

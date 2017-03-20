@@ -124,13 +124,17 @@ def LNot(node):
     return "!" + toSEFL(node.expr)
 
 def Member(node):
-    return toSEFL(node.expr) + "." + node.member
+    if node.member != 'apply':
+        return toSEFL(node.expr) + "." + node.member
+    else:
+        return toSEFL(node.expr)
 
 def Method(node):
     return toSEFL(node.type)
 
 def MethodCallExpression(node):
     returnString = ""
+    # extract method
     if hasattr(node.method, 'member') and node.method.member == "extract":
         if hasattr(node.arguments.vec[0], 'path'):
             headerToExtract = node.arguments.vec[0].path.name
@@ -141,9 +145,14 @@ def MethodCallExpression(node):
                     for field in header[1]:
                         returnString += "\tAssign(Tag('" + field.name + "_" + headerToExtract + "'), SymbolicValue()),\n"
             returnString = returnString[:-2]
-        return returnString
+    # emit method
+    # if ...
+    # extern method: Name it as extern for later processing
+    elif hasattr(node.method, 'expr') and node.method.expr.type.Node_Type == "Type_Extern":
+        returnString =  "//Extern: " + toSEFL(node.method)
     else:
-        return toSEFL(node.method)
+        returnString = toSEFL(node.method)
+    return returnString
 
 def MethodCallStatement(node):
     return toSEFL(node.methodCall)
@@ -355,12 +364,6 @@ def assign(node):
         returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :==:(" + str(toSEFL(node.right.right))  + ")), " + \
                        "Assign('" + str(toSEFL(node.left)) + "', ConstantValue(1)), Assign('" + str(toSEFL(node.left)) + "', ConstantValue(0)))"
     else:
-        #rightValue = ""
-        #if node.right.Node_Type == 'PathExpression':
-        #    rightValue = ":@('" + str(toSEFL(node.right)) + "')"
-        #else:
-        #    rightValue = str(toSEFL(node.right))
-
         returnString = "Assign('" + str(toSEFL(node.left)) + "', " + formatATNode(node.right) + ")"
     return returnString
 
@@ -368,6 +371,12 @@ def formatATNode(node): # :@
     value = ""
     if node.Node_Type == 'PathExpression' or node.Node_Type == 'Member' :
         value = ":@('" + str(toSEFL(node)) + "')"
+    elif isExternal(node):
+        value = "SymbolicValue()"
     else:
         value = str(toSEFL(node))
     return value
+
+def isExternal(node):
+    # the variable could be external or inside an external variable
+    return "//Extern" in toSEFL(node)
