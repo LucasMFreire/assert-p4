@@ -1,4 +1,4 @@
-#PHI: Packet Header Integrity Verifier
+# PHI: Packet Header Integrity Verifier
 
 **Translate** a P4 program to [SEFL](https://github.com/nets-cs-pub-ro/Symnet) from its *json* file:
 
