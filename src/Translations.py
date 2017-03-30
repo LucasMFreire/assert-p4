@@ -136,15 +136,14 @@ def MethodCallExpression(node):
     returnString = ""
     # extract method
     if hasattr(node.method, 'member') and node.method.member == "extract":
-        if hasattr(node.arguments.vec[0], 'path'):
-            headerToExtract = node.arguments.vec[0].path.name
-            returnString += "// extract " + headerToExtract + "\n"
-            for header in headers:
-                if header[0] == node.typeArguments.vec[0].path.name:
-                    returnString += "\tAssign('validityBit_" + headerToExtract + "', ConstantValue(1)),\n"
-                    for field in header[1]:
-                        returnString += "\tAssign(Tag('" + field.name + "_" + headerToExtract + "'), SymbolicValue()),\n"
-            returnString = returnString[:-2]
+        headerToExtract = toSEFL(node.arguments.vec[0])
+        returnString += "// extract " + headerToExtract + "\n"
+        for header in headers:
+            if header[0] == node.typeArguments.vec[0].path.name:
+                returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
+                for field in header[1]:
+                    returnString += "\tAssign(Tag('" + headerToExtract + "." + field.name + "'), SymbolicValue()),\n"
+        returnString = returnString[:-2]
     # emit method
     # if ...
     # extern method: Name it as extern for later processing
