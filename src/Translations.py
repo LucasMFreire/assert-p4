@@ -145,10 +145,13 @@ def MethodCallExpression(node):
                     returnString += "\tAssign(Tag('" + headerToExtract + "." + field.name + "'), SymbolicValue()),\n"
         returnString = returnString[:-2]
     # emit method
-    # if ...
+        # if ...
     # extern method: Name it as extern for later processing
     elif hasattr(node.method, 'expr') and node.method.expr.type.Node_Type == "Type_Extern":
         returnString =  "//Extern: " + toSEFL(node.method)
+    #verify method
+    elif hasattr(node.method, 'path') and node.method.path.name == "verify":
+        returnString += "If(Constrain('" + node.arguments.vec[0].path.name + "', :==:(ConstantValue(0))), Fail('" + node.arguments.vec[1].member + "')"
     else:
         returnString = toSEFL(node.method)
     return returnString
