@@ -1,0 +1,41 @@
+switch/p4src/nexthop.p4(215): warning: fair: Action selector attribute ignored
+    selection_mode : fair;
+                     ^^^^
+switch/p4src/fabric.p4(235): warning: fair: Action selector attribute ignored
+    selection_mode : fair;
+                     ^^^^
+switch/p4src/port.p4(312): warning: fair: Action selector attribute ignored
+    selection_mode : fair;
+                     ^^^^
+switch/p4src/l3.p4(158): warning: -1: negative value with unsigned type
+    add_to_field(ipv4.ttl, -1);
+                            ^
+switch/p4src/l3.p4(166): warning: -1: negative value with unsigned type
+    add_to_field(ipv4.ttl, -1);
+                            ^
+switch/p4src/l3.p4(174): warning: -1: negative value with unsigned type
+    add_to_field(ipv6.hopLimit, -1);
+                                 ^
+switch/p4src/l3.p4(182): warning: -1: negative value with unsigned type
+    add_to_field(ipv6.hopLimit, -1);
+                                 ^
+switch/p4src/l3.p4(190): warning: -1: negative value with unsigned type
+    add_to_field(mpls[0].ttl, -1);
+                               ^
+switch/p4src/nat.p4(160): warning: -20: negative value with unsigned type
+    add(nat_metadata.l4_len, ipv4.totalLen, -20);
+                                             ^^
+switch/p4src/tunnel.p4(1011): warning: -14: negative value with unsigned type
+    add(egress_metadata.payload_length, standard_metadata.packet_length, -14);
+                                                                          ^^
+switch/p4src/fabric.p4(211): warning: Could not infer type for fabric_mgid, using bit<8>
+action set_fabric_multicast(fabric_mgid) {
+                            ^^^^^^^^^^^
+switch/p4src/acl.p4(563): warning: Could not infer type for session_id, using bit<8>
+action negative_mirror(session_id) {
+                       ^^^^^^^^^^
+warning: The order of headers in deparser is not uniquely determined by parser!
+switch/p4src/includes/parser.p4(487): warning: SelectCase: unreachable
+        default: parse_all_int_meta_value_heders;
+        ^^^^^^^
+
