@@ -1,6 +1,8 @@
 
 blocks = []
 headers = []
+structFieldsHeaderTypes = {}
+headerStackSize = {}
 currentPacketAllocationPosition = 0
 
 def run(node):
@@ -44,27 +46,56 @@ def BlockStatement(node):
     blocks.append(block)
     return blockName
 
+def BOr(node):
+    return "<BOr>" + str(node.Node_ID)
+
+def BXor(node):
+    return "<BXor>" + str(node.Node_ID)
+
+def Cast(node):
+    return "<Cast>" + str(node.Node_ID)
+
+def LAnd(node):
+    return "<LAnd>" + str(node.Node_ID)
+
+def LOr(node):
+    return "<LOr>" + str(node.Node_ID)
+
+def Slice(node):
+    return "<Slice>" + str(node.Node_ID)
+
+def Shl(node):
+    return "<Shl>" + str(node.Node_ID)
+
 def ActionList(node):
     #assuming every action will be forked
     returnString = "\tFork("
     for action in node.actionList.vec:
-        returnString += action.expression.method.path.name + ", "
+        if action.expression.Node_Type == "PathExpression":
+            returnString += action.expression.path.name + ", "
+        elif action.expression.Node_Type == "MethodCallExpression":
+            returnString += action.expression.method.path.name + ", "
+        else:
+            returnString += "ERROR:UNKNOWN ACTION LIST TYPE"
     return returnString[:-2] + ")"
 
 def ActionListElement(node):
-    return "<ActionListElement>" + str(node.Node_ID) + "\n" 
+    return "<ActionListElement>" + str(node.Node_ID) 
 
 def Add(node):
     return add(node)
 
+def Sub(node):
+    return sub(node)
+
 def Annotation(node):
-    return "<Annotation>" + str(node.Node_ID) + "\n" 
+    return "<Annotation>" + str(node.Node_ID) 
 
 def Annotations(node):
-    return "<Annotations>" + str(node.Node_ID) + "\n" 
+    return "<Annotations>" + str(node.Node_ID) 
 
 def ArrayIndex(node):
-    return "<ArrayIndex>" + str(node.Node_ID) + "\n" 
+    return toSEFL(node.left) + "_" + str(node.right.value)
 
 def AssignmentStatement(node):
     return assign(node)
@@ -79,10 +110,10 @@ def Constant(node):
     return "ConstantValue(" + str(node.value) + ")"
 
 def ConstructorCallExpression(node):
-    return "<ConstructorCallExpression>" + str(node.Node_ID) + "\n" 
+    return "<ConstructorCallExpression>" + str(node.Node_ID) 
 
 def Declaration_Instance(node):
-    return "<Declaration_Instance>" + str(node.Node_ID) + "\n" 
+    return "<Declaration_Instance>" + str(node.Node_ID) 
 
 def Declaration_Variable(node):
     if  node.type.Node_Type == 'Type_Name':
@@ -97,13 +128,13 @@ def Declaration_Variable(node):
     return allocate(node)
 
 def EmptyStatement(node):
-    return "<EmptyStatement>" + str(node.Node_ID) + "\n"
+    return "<EmptyStatement>" + str(node.Node_ID)
 
 def Neq(node):
-    return "<Neq>" + str(node.Node_ID) + "\n"
+    return "<Neq>" + str(node.Node_ID)
 
 def Equ(node):
-    return "<Equ>" + str(node.Node_ID) + "\n"
+    return "<Equ>" + str(node.Node_ID)
 
 def ExpressionValue(node):
     return toSEFL(node.expression) 
@@ -139,10 +170,33 @@ def MethodCallExpression(node):
         headerToExtract = toSEFL(node.arguments.vec[0])
         returnString += "// extract " + headerToExtract + "\n"
         for header in headers:
-            if header[0] == node.typeArguments.vec[0].path.name:
+            # header stack position
+            if node.arguments.vec[0].Node_Type == "ArrayIndex":
+                if header[0] == getHeaderType(node.arguments.vec[0].left.member):
+                    headerToExtract = node.arguments.vec[0].left.expr.path.name
+                    returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
+                    for field in header[1]:
+                        returnString += "\tAssign('" + headerToExtract + "." + "_" + str(node.arguments.vec[0].right.value) + field.name + "', SymbolicValue()),\n"
+            # next header stack element
+            elif node.arguments.vec[0].member == "next":
+                if header[0] == getHeaderType(node.arguments.vec[0].expr.member):
+                    hdr = headerToExtract.split(".")[1] #remove next keyword
+                    for i in range(0, headerStackSize[hdr]):
+                        returnString += "\tIf('" + hdr + "Index', :==:(ConstantValue(" + str(i) + ")),\n\t\tinstructionBlock(\n"
+                        returnString += "\t\t\tAssign('" + hdr +  "_" + str(i) + ".isValid" + "', ConstantValue(1)),\n"
+                        for field in header[1]:
+                            returnString += "\t\t\tAssign('" + hdr + "_" + str(i) + "." + field.name + "', SymbolicValue()),\n"
+                        returnString = returnString[:-2]
+                        returnString += "),\n"  
+                    returnString = returnString[:-2] 
+                    for i in range(0, headerStackSize[hdr]):
+                        returnString += ")"
+                    returnString += ",\n\tAssign('" + hdr + "Index', :+:('" + hdr + "Index',ConstantValue(1))),\n"
+            #regular header field
+            elif header[0] == getHeaderType(node.arguments.vec[0].member):
                 returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
                 for field in header[1]:
-                    returnString += "\tAssign(Tag('" + headerToExtract + "." + field.name + "'), SymbolicValue()),\n"
+                    returnString += "\tAssign('" + headerToExtract + "." + field.name + "', SymbolicValue()),\n"
         returnString = returnString[:-2]
     # emit method
         # if ...
@@ -152,6 +206,12 @@ def MethodCallExpression(node):
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
         returnString += "If(Constrain('" + node.arguments.vec[0].path.name + "', :==:(ConstantValue(0))), Fail('" + node.arguments.vec[1].member + "')"
+     #SetValid method
+    elif hasattr(node.method, 'member') and node.method.member == "setValid":
+        returnString += "Assign('" + toSEFL(node.method.expr) + ".isValid', ConstantValue(1))"
+     #SetInvalid method
+    elif hasattr(node.method, 'member') and node.method.member == "setInvalid":
+        returnString += "Assign('" + toSEFL(node.method.expr) + ".isValid', ConstantValue(0))"
     else:
         returnString = toSEFL(node.method)
     return returnString
@@ -160,7 +220,7 @@ def MethodCallStatement(node):
     return toSEFL(node.methodCall)
 
 def NameMapProperty(node):
-    return "<NameMapProperty>" + str(node.Node_ID) + "\n"
+    return "<NameMapProperty>" + str(node.Node_ID)
 
 def P4Action(node):
     actionData = ""
@@ -196,6 +256,9 @@ def SelectExpression(node):
     expressions = node.select.components.vec
     exp = []
     for expression in expressions:
+        if expression.Node_Type == 'Slice':
+            #TODO: slice bit string currently not supported #bitop
+            return ""
         if expression.Node_Type == 'Member':
             exp.append(expression.member + "_" + toSEFL(expression.expr))
         if  expression.Node_Type == "MethodCallStatement":
@@ -205,18 +268,31 @@ def SelectExpression(node):
     cases = node.selectCases.vec
     returnString = ""
     for case in cases:
-        if case.keyset.Node_Type == 'DefaultExpression':
+        if case.keyset.Node_Type == 'Mask':
+            #todo: fix mask #bitop
+            returnString = "//TODO: MASK"
+        elif case.keyset.Node_Type == 'DefaultExpression':
             returnString += case.state.path.name + ")\n\t"
-        else:
+        elif case.keyset.Node_Type == 'Constant':
             returnString += "If(" + str(exp[0]) + " == " + str(case.keyset.value) + ", " + case.state.path.name + ",\n\t"
     #close with ) according to cases length
     return returnString
 
 def StringLiteral(node):
-    return "<StringLiteral>" + str(node.Node_ID) + "\n"
+    return "<StringLiteral>" + str(node.Node_ID)
 
 def StructField(node):
-    return allocate(node)
+    returnString = ""
+    #warning: two headers defined in different structs
+    #with the same name but different types would break this
+    #future solution: discriminate by struct name
+    if  node.type.Node_Type == "Type_Name":
+        structFieldsHeaderTypes[node.name] = node.type.path.name
+    if  node.type.Node_Type == "Type_Stack":
+        structFieldsHeaderTypes[node.name] = node.type.elementType.path.name
+        headerStackSize[node.name] = node.type.size.value
+        returnString += ",\nAllocate('" + node.name + "Index')" 
+    return returnString
 
 def SwitchCase(node):
     return toSEFL(node.statement)
@@ -230,46 +306,46 @@ def TableProperties(node):
     return toSEFL(node.properties)
 
 def TypeParameters(node):
-    return "<TypeParameters>" + str(node.Node_ID) + "\n"
+    return "<TypeParameters>" + str(node.Node_ID)
 
 def Type_Action(node):
-    return "<Type_Action>" + str(node.Node_ID) + "\n"
+    return "<Type_Action>" + str(node.Node_ID)
 
 def Type_ActionEnum(node):
-    return "<Type_ActionEnum>" + str(node.Node_ID) + "\n"
+    return "<Type_ActionEnum>" + str(node.Node_ID)
 
 def Type_Control(node):
-    return "<Type_Control>" + str(node.Node_ID) + "\n"
+    return "<Type_Control>" + str(node.Node_ID)
 
 def Type_Method(node):
-    return "<Type_Method>" + str(node.Node_ID) + "\n"
+    return "<Type_Method>" + str(node.Node_ID)
 
 def Type_Name(node):
-    return "<Type_Name>" + str(node.Node_ID) + "\n"
+    return "<Type_Name>" + str(node.Node_ID)
 
 def Type_Package(node):
-    return "<Type_Package>" + str(node.Node_ID) + "\n"
+    return "<Type_Package>" + str(node.Node_ID)
 
 def Type_Struct(node):
-    return "<Type_Struct>" + str(node.Node_ID) + "\n"
+    return toSEFL(node.fields)
 
 def Type_Table(node):
     return toSEFL(node.table)
 
 def Type_Typedef(node):
-    return "<Type_Typedef>" + str(node.Node_ID) + "\n"
+    return "<Type_Typedef>" + str(node.Node_ID)
 
 def Type_Unknown(node):
-    return "<Type_Unknown>" + str(node.Node_ID) + "\n"
+    return "<Type_Unknown>" + str(node.Node_ID)
 
 def Type_Error(node):
-    return "<Type_Error>" + str(node.Node_ID) + "\n"
+    return "<Type_Error>" + str(node.Node_ID)
 
 def Type_Extern(node):
-    return "<Type_Extern>" + str(node.Node_ID) + "\n"
+    return "<Type_Extern>" + str(node.Node_ID)
 
 def Declaration_MatchKind(node):
-    return "<Declaration_MatchKind>" + str(node.Node_ID) + "\n"
+    return "<Declaration_MatchKind>" + str(node.Node_ID)
 
 def Type_Header(node):
     headerName = node.name
@@ -287,10 +363,10 @@ def P4Parser(node):
     return returnString 
 
 def Type_Enum(node):
-    return "<Type_Enum>" + str(node.Node_ID) + "\n"
+    return "<Type_Enum>" + str(node.Node_ID)
 
 def Type_Parser(node):
-    return "<Type_Parser>" + str(node.Node_ID) + "\n"
+    return "<Type_Parser>" + str(node.Node_ID)
 
 def ParserState(node):
     components = ""
@@ -340,6 +416,9 @@ def greater(node):
 def add(node):
     return ":+:(" + formatATNode(node.left) + ", " + formatATNode(node.right) + ")"
 
+def sub(node):
+    return ":-:(" + formatATNode(node.left) + ", " + formatATNode(node.right) + ")"
+
 def allocateHeader(node, appendName):
     returnString = ""
     global currentPacketAllocationPosition
@@ -382,3 +461,6 @@ def formatATNode(node): # :@
 def isExternal(node):
     # the variable could be external or inside an external variable
     return "//Extern" in toSEFL(node)
+
+def getHeaderType(headerName):
+    return structFieldsHeaderTypes[headerName]
