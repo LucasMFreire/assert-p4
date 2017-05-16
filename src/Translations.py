@@ -260,22 +260,58 @@ def SelectExpression(node):
             #TODO: slice bit string currently not supported #bitop
             return ""
         if expression.Node_Type == 'Member':
-            exp.append(expression.member + "_" + toSEFL(expression.expr))
+            exp.append(toSEFL(expression.expr) + "." + expression.member)
         if  expression.Node_Type == "MethodCallStatement":
             if expression.method.member == "isValid":
                 exp.append("validityBit_" + expression.method.expr.path.name)
 
     cases = node.selectCases.vec
     returnString = ""
+    multipleMatches = (cases[0].keyset.Node_Type == "ListExpression")
+    if multipleMatches:
+        returnString += selectMultiple(node, cases, exp)
+    else:
+        returnString += selectSingle(node, cases, exp)
+    return returnString
+
+def selectSingle(node, cases, exp):
+    returnString = ""
     for case in cases:
         if case.keyset.Node_Type == 'Mask':
             #todo: fix mask #bitop
-            returnString = "//TODO: MASK"
+            returnString = "//TODO: MASK\n"
         elif case.keyset.Node_Type == 'DefaultExpression':
-            returnString += case.state.path.name + ")\n\t"
+            returnString += case.state.path.name
         elif case.keyset.Node_Type == 'Constant':
-            returnString += "If(" + str(exp[0]) + " == " + str(case.keyset.value) + ", " + case.state.path.name + ",\n\t"
+            returnString += "If(Constrain('" + str(exp[0]) + "', :==:(ConstantValue(" + str(case.keyset.value) + "))), " + case.state.path.name + ",\n\t"
     #close with ) according to cases length
+    for i in range(0, len(cases) - 1):
+        returnString += ")"
+    return returnString
+
+def selectMultiple(node, cases, exp):
+    #not the best solution. Multiple branches can occur. AND statement would be better.
+    returnString = "Allocate('selectedMultipleParam'),\n\t"
+    returnString += "Assign('selectedMultipleParam', ConstantValue(0)),\n\t"
+    for case in cases:
+        if case.keyset.Node_Type == 'Mask':
+            #todo: fix mask #bitop
+            returnString = "//TODO: MASK\n"
+        elif case.keyset.Node_Type == 'DefaultExpression':
+            returnString += "If(Constrain('selectedMultipleParam', :==:(ConstantValue(0))),\n\t\t"
+            returnString += "InstructionBlock(Assign('selectedMultipleParam', ConstantValue(1)), " + case.state.path.name + ")),\n\t"
+        elif case.keyset.Node_Type == "ListExpression":
+            returnString += "If(Constrain('selectedMultipleParam', :==:(ConstantValue(0))), \n\t\t"
+            for idx,e in enumerate(exp):
+                if case.keyset.components.vec[idx].Node_Type == "Mask":
+                    returnString += "//TODO: MASK\n"
+                else:
+                    returnString += "If(Constrain('" + str(e) + "', :==:(ConstantValue(" + str(case.keyset.components.vec[idx].value) + "))), \n\t\t"
+            returnString += "InstructionBlock(Assign('selectedMultipleParam', ConstantValue(1)), " + case.state.path.name + "))"
+            for idx,e in enumerate(exp):
+                returnString += ")"
+            returnString += ",\n\t"
+    returnString += "Deallocate('selectedMultipleParam')"
     return returnString
 
 def StringLiteral(node):
