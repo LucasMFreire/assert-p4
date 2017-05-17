@@ -46,6 +46,9 @@ def BlockStatement(node):
     blocks.append(block)
     return blockName
 
+def BAnd(node):
+    return "<BOr>" + str(node.Node_ID)
+
 def BOr(node):
     return "<BOr>" + str(node.Node_ID)
 
@@ -131,10 +134,10 @@ def EmptyStatement(node):
     return "<EmptyStatement>" + str(node.Node_ID)
 
 def Neq(node):
-    return "<Neq>" + str(node.Node_ID)
+    return "'" + toSEFL(node.left) +  "', :~:(:==:(" + toSEFL(node.right) + "))"
 
 def Equ(node):
-    return "<Equ>" + str(node.Node_ID)
+    return "'" + toSEFL(node.left) +  "', :==:(" + toSEFL(node.right) + ")"
 
 def ExpressionValue(node):
     return toSEFL(node.expression) 
@@ -434,16 +437,60 @@ def declareParameters(node):
 
 def ifStatement(node):
     condition = ""
-    if node.condition.Node_Type == 'PathExpression':
-        condition = formatATNode(node.condition) + ", :==:(ConstantValue(1))"
-    elif node.condition.Node_Type == 'LNot' and node.condition.expr.Node_Type == 'PathExpression':
-        condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
+    returnString = ""
+    if node.condition.Node_Type == 'LAnd' or node.condition.Node_Type == 'LOr':
+        returnString += logicalExpression(node.condition)
+        booleanStatement = node.condition.Node_Type + str(node.condition.Node_ID)
+        returnString += "If(Constrain('" + booleanStatement + "'), :==:(ConstantValue(1)), " + str(toSEFL(node.ifTrue))
+        if hasattr(node, "ifFalse"):
+            returnString += ", " + str(toSEFL(node.ifFalse))
+        returnString += "),\n\t"
+        returnString += "Deallocate('" + booleanStatement + "')"
     else:
-        condition = str(toSEFL(node.condition))
-    returnString = "If(Constrain(" + condition + "), " + str(toSEFL(node.ifTrue))
-    if hasattr(node, "ifFalse"):
-        returnString += ", " + str(toSEFL(node.ifFalse))
-    returnString += ")"
+        if node.condition.Node_Type == 'PathExpression':
+            condition = formatATNode(node.condition) + ", :==:(ConstantValue(1))"
+        elif node.condition.Node_Type == 'LNot' and node.condition.expr.Node_Type == 'PathExpression':
+            condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
+            condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
+        else:
+            condition = str(toSEFL(node.condition))
+        returnString = "If(Constrain(" + condition + "), " + str(toSEFL(node.ifTrue))
+        if hasattr(node, "ifFalse"):
+            returnString += ", " + str(toSEFL(node.ifFalse))
+        returnString += ")"
+    return returnString
+
+def logicalExpression(node):
+    booleanStatement = node.Node_Type + str(node.Node_ID)
+    returnString = "Allocate('" + booleanStatement + "'),\n\t"
+    leftIsLogicalExpression = node.left.Node_Type == 'LAnd' or node.left.Node_Type == 'LOr'
+    rightIsLogicalExpression = node.right.Node_Type == 'LAnd' or node.right.Node_Type == 'LOr'
+    if leftIsLogicalExpression:
+        returnString += logicalExpression(node.left)
+        lExp = "'" + node.left.Node_Type + str(node.left.Node_ID) + "'"
+    else:
+        lExp = toSEFL(node.left)
+    if rightIsLogicalExpression:
+        returnString += logicalExpression(node.right)
+        rExp = "'" + node.right.Node_Type + str(node.right.Node_ID) + "'"
+    else:
+        rExp = toSEFL(node.right)
+    if node.Node_Type == 'LAnd':
+        returnString += "If(Constrain(" + lExp + "),\n\t\t"
+        returnString += "If(Constrain(" + rExp + "),\n\t\t\t"
+        returnString += "Assign('" +  booleanStatement + "', ConstantValue(1)),\n\t\t"
+        returnString += "Assign('" + booleanStatement + "', ConstantValue(0))),\n\t"
+        returnString += "Assign('" + booleanStatement + "', ConstantValue(0))),\n\t"
+    elif node.Node_Type == 'LOr':
+        returnString += "If(Constrain(" + lExp + "),\n\t\t"
+        returnString += "If(Constrain(" + rExp + "),\n\t\t\t"
+        returnString += "Assign('" +  booleanStatement + "', ConstantValue(1)),\n\t\t"
+        returnString += "Assign('" + booleanStatement+ "', ConstantValue(0))),\n\t"
+        returnString += "Assign('" + booleanStatement + "', ConstantValue(1))),\n\t"
+    if leftIsLogicalExpression:
+        returnString += "Deallocate(" + lExp + "),\n\t"
+    if rightIsLogicalExpression:
+        returnString += "Deallocate(" + rExp + "),\n\t"
     return returnString
 
 def greater(node):
