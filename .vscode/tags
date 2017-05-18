@@ -1,0 +1,146 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ActionList	../src/Translations.py	/^def ActionList(node):$/;"	kind:function	line:47
+ActionList	../src/staticAnalyzer.py	/^def ActionList(node):$/;"	kind:function	line:19
+ActionListElement	../src/Translations.py	/^def ActionListElement(node):$/;"	kind:function	line:54
+ActionListElement	../src/staticAnalyzer.py	/^def ActionListElement(node):$/;"	kind:function	line:22
+Add	../src/Translations.py	/^def Add(node):$/;"	kind:function	line:57
+Add	../src/staticAnalyzer.py	/^def Add(node):$/;"	kind:function	line:25
+Annotation	../src/Translations.py	/^def Annotation(node):$/;"	kind:function	line:60
+Annotation	../src/staticAnalyzer.py	/^def Annotation(node):$/;"	kind:function	line:28
+Annotations	../src/Translations.py	/^def Annotations(node):$/;"	kind:function	line:63
+Annotations	../src/staticAnalyzer.py	/^def Annotations(node):$/;"	kind:function	line:34
+ArrayIndex	../src/Translations.py	/^def ArrayIndex(node):$/;"	kind:function	line:66
+ArrayIndex	../src/staticAnalyzer.py	/^def ArrayIndex(node):$/;"	kind:function	line:37
+AssignmentStatement	../src/Translations.py	/^def AssignmentStatement(node):$/;"	kind:function	line:69
+AssignmentStatement	../src/staticAnalyzer.py	/^def AssignmentStatement(node):$/;"	kind:function	line:40
+BlockStatement	../src/Translations.py	/^def BlockStatement(node):$/;"	kind:function	line:37
+BlockStatement	../src/staticAnalyzer.py	/^def BlockStatement(node):$/;"	kind:function	line:15
+BoolLiteral	../src/Translations.py	/^def BoolLiteral(node):$/;"	kind:function	line:72
+BoolLiteral	../src/staticAnalyzer.py	/^def BoolLiteral(node):$/;"	kind:function	line:45
+Constant	../src/Translations.py	/^def Constant(node):$/;"	kind:function	line:78
+Constant	../src/staticAnalyzer.py	/^def Constant(node):$/;"	kind:function	line:48
+ConstructorCallExpression	../src/Translations.py	/^def ConstructorCallExpression(node):$/;"	kind:function	line:81
+ConstructorCallExpression	../src/staticAnalyzer.py	/^def ConstructorCallExpression(node):$/;"	kind:function	line:51
+Declaration_Instance	../src/Translations.py	/^def Declaration_Instance(node):$/;"	kind:function	line:84
+Declaration_Instance	../src/staticAnalyzer.py	/^def Declaration_Instance(node):$/;"	kind:function	line:54
+Declaration_MatchKind	../src/Translations.py	/^def Declaration_MatchKind(node):$/;"	kind:function	line:271
+Declaration_MatchKind	../src/staticAnalyzer.py	/^def Declaration_MatchKind(node):$/;"	kind:function	line:164
+Declaration_Variable	../src/Translations.py	/^def Declaration_Variable(node):$/;"	kind:function	line:87
+Declaration_Variable	../src/staticAnalyzer.py	/^def Declaration_Variable(node):$/;"	kind:function	line:57
+EmptyStatement	../src/Translations.py	/^def EmptyStatement(node):$/;"	kind:function	line:99
+EmptyStatement	../src/staticAnalyzer.py	/^def EmptyStatement(node):$/;"	kind:function	line:60
+Equ	../src/Translations.py	/^def Equ(node):$/;"	kind:function	line:105
+ExpressionValue	../src/Translations.py	/^def ExpressionValue(node):$/;"	kind:function	line:108
+ExpressionValue	../src/staticAnalyzer.py	/^def ExpressionValue(node):$/;"	kind:function	line:63
+Grt	../src/Translations.py	/^def Grt(node):$/;"	kind:function	line:111
+Grt	../src/staticAnalyzer.py	/^def Grt(node):$/;"	kind:function	line:66
+IfStatement	../src/Translations.py	/^def IfStatement(node):$/;"	kind:function	line:114
+IfStatement	../src/staticAnalyzer.py	/^def IfStatement(node):$/;"	kind:function	line:69
+Key	../src/Translations.py	/^def Key(node):$/;"	kind:function	line:117
+LNot	../src/Translations.py	/^def LNot(node):$/;"	kind:function	line:123
+LNot	../src/staticAnalyzer.py	/^def LNot(node):$/;"	kind:function	line:72
+Member	../src/Translations.py	/^def Member(node):$/;"	kind:function	line:126
+Member	../src/staticAnalyzer.py	/^def Member(node):$/;"	kind:function	line:75
+Method	../src/Translations.py	/^def Method(node):$/;"	kind:function	line:132
+Method	../src/staticAnalyzer.py	/^def Method(node):$/;"	kind:function	line:78
+MethodCallExpression	../src/Translations.py	/^def MethodCallExpression(node):$/;"	kind:function	line:135
+MethodCallExpression	../src/staticAnalyzer.py	/^def MethodCallExpression(node):$/;"	kind:function	line:81
+MethodCallStatement	../src/Translations.py	/^def MethodCallStatement(node):$/;"	kind:function	line:159
+MethodCallStatement	../src/staticAnalyzer.py	/^def MethodCallStatement(node):$/;"	kind:function	line:84
+NameMapProperty	../src/Translations.py	/^def NameMapProperty(node):$/;"	kind:function	line:162
+NameMapProperty	../src/staticAnalyzer.py	/^def NameMapProperty(node):$/;"	kind:function	line:87
+Neq	../src/Translations.py	/^def Neq(node):$/;"	kind:function	line:102
+Node	../src/Node.py	/^class Node(object):$/;"	kind:class	line:12
+Node.py	../src/Node.py	1;"	kind:file	line:1
+NodeFactory	../src/Node.py	/^def NodeFactory(node):$/;"	kind:function	line:4
+P4Action	../src/Translations.py	/^def P4Action(node):$/;"	kind:function	line:165
+P4Action	../src/staticAnalyzer.py	/^def P4Action(node):$/;"	kind:function	line:90
+P4Control	../src/Translations.py	/^def P4Control(node):$/;"	kind:function	line:30
+P4Control	../src/staticAnalyzer.py	/^def P4Control(node):$/;"	kind:function	line:10
+P4Parser	../src/Translations.py	/^def P4Parser(node):$/;"	kind:function	line:283
+P4Parser	../src/staticAnalyzer.py	/^def P4Parser(node):$/;"	kind:function	line:170
+P4Program	../src/Translations.py	/^def P4Program(node):$/;"	kind:function	line:27
+P4Program	../src/staticAnalyzer.py	/^def P4Program(node):$/;"	kind:function	line:7
+P4Table	../src/Translations.py	/^def P4Table(node):$/;"	kind:function	line:172
+P4Table	../src/staticAnalyzer.py	/^def P4Table(node):$/;"	kind:function	line:93
+P4_to_SEFL.py	../src/P4_to_SEFL.py	1;"	kind:file	line:1
+Parameter	../src/Translations.py	/^def Parameter(node):$/;"	kind:function	line:175
+Parameter	../src/staticAnalyzer.py	/^def Parameter(node):$/;"	kind:function	line:96
+ParameterList	../src/Translations.py	/^def ParameterList(node):$/;"	kind:function	line:178
+ParameterList	../src/staticAnalyzer.py	/^def ParameterList(node):$/;"	kind:function	line:99
+ParserState	../src/Translations.py	/^def ParserState(node):$/;"	kind:function	line:295
+ParserState	../src/staticAnalyzer.py	/^def ParserState(node):$/;"	kind:function	line:180
+Path	../src/Translations.py	/^def Path(node):$/;"	kind:function	line:181
+Path	../src/staticAnalyzer.py	/^def Path(node):$/;"	kind:function	line:102
+PathExpression	../src/Translations.py	/^def PathExpression(node):$/;"	kind:function	line:184
+PathExpression	../src/staticAnalyzer.py	/^def PathExpression(node):$/;"	kind:function	line:105
+Property	../src/Translations.py	/^def Property(node):$/;"	kind:function	line:187
+Property	../src/staticAnalyzer.py	/^def Property(node):$/;"	kind:function	line:108
+SelectExpression	../src/Translations.py	/^def SelectExpression(node):$/;"	kind:function	line:195
+StringLiteral	../src/Translations.py	/^def StringLiteral(node):$/;"	kind:function	line:215
+StringLiteral	../src/staticAnalyzer.py	/^def StringLiteral(node):$/;"	kind:function	line:111
+StructField	../src/Translations.py	/^def StructField(node):$/;"	kind:function	line:218
+StructField	../src/staticAnalyzer.py	/^def StructField(node):$/;"	kind:function	line:114
+SwitchCase	../src/Translations.py	/^def SwitchCase(node):$/;"	kind:function	line:221
+SwitchCase	../src/staticAnalyzer.py	/^def SwitchCase(node):$/;"	kind:function	line:117
+SwitchStatement	../src/Translations.py	/^def SwitchStatement(node):$/;"	kind:function	line:224
+SwitchStatement	../src/staticAnalyzer.py	/^def SwitchStatement(node):$/;"	kind:function	line:121
+TableProperties	../src/Translations.py	/^def TableProperties(node):$/;"	kind:function	line:229
+TableProperties	../src/staticAnalyzer.py	/^def TableProperties(node):$/;"	kind:function	line:125
+Translations.py	../src/Translations.py	1;"	kind:file	line:1
+TypeParameters	../src/Translations.py	/^def TypeParameters(node):$/;"	kind:function	line:232
+TypeParameters	../src/staticAnalyzer.py	/^def TypeParameters(node):$/;"	kind:function	line:128
+Type_Action	../src/Translations.py	/^def Type_Action(node):$/;"	kind:function	line:235
+Type_Action	../src/staticAnalyzer.py	/^def Type_Action(node):$/;"	kind:function	line:131
+Type_ActionEnum	../src/Translations.py	/^def Type_ActionEnum(node):$/;"	kind:function	line:238
+Type_ActionEnum	../src/staticAnalyzer.py	/^def Type_ActionEnum(node):$/;"	kind:function	line:134
+Type_Control	../src/Translations.py	/^def Type_Control(node):$/;"	kind:function	line:241
+Type_Control	../src/staticAnalyzer.py	/^def Type_Control(node):$/;"	kind:function	line:137
+Type_Enum	../src/Translations.py	/^def Type_Enum(node):$/;"	kind:function	line:289
+Type_Enum	../src/staticAnalyzer.py	/^def Type_Enum(node):$/;"	kind:function	line:174
+Type_Error	../src/Translations.py	/^def Type_Error(node):$/;"	kind:function	line:265
+Type_Error	../src/staticAnalyzer.py	/^def Type_Error(node):$/;"	kind:function	line:158
+Type_Extern	../src/Translations.py	/^def Type_Extern(node):$/;"	kind:function	line:268
+Type_Extern	../src/staticAnalyzer.py	/^def Type_Extern(node):$/;"	kind:function	line:161
+Type_Header	../src/Translations.py	/^def Type_Header(node):$/;"	kind:function	line:274
+Type_Header	../src/staticAnalyzer.py	/^def Type_Header(node):$/;"	kind:function	line:167
+Type_Method	../src/Translations.py	/^def Type_Method(node):$/;"	kind:function	line:244
+Type_Method	../src/staticAnalyzer.py	/^def Type_Method(node):$/;"	kind:function	line:140
+Type_Name	../src/Translations.py	/^def Type_Name(node):$/;"	kind:function	line:247
+Type_Name	../src/staticAnalyzer.py	/^def Type_Name(node):$/;"	kind:function	line:143
+Type_Package	../src/Translations.py	/^def Type_Package(node):$/;"	kind:function	line:250
+Type_Package	../src/staticAnalyzer.py	/^def Type_Package(node):$/;"	kind:function	line:146
+Type_Parser	../src/Translations.py	/^def Type_Parser(node):$/;"	kind:function	line:292
+Type_Parser	../src/staticAnalyzer.py	/^def Type_Parser(node):$/;"	kind:function	line:177
+Type_Struct	../src/Translations.py	/^def Type_Struct(node):$/;"	kind:function	line:253
+Type_Struct	../src/staticAnalyzer.py	/^def Type_Struct(node):$/;"	kind:function	line:149
+Type_Table	../src/Translations.py	/^def Type_Table(node):$/;"	kind:function	line:256
+Type_Table	../src/staticAnalyzer.py	/^def Type_Table(node):$/;"	kind:function	line:152
+Type_Typedef	../src/Translations.py	/^def Type_Typedef(node):$/;"	kind:function	line:259
+Type_Unknown	../src/Translations.py	/^def Type_Unknown(node):$/;"	kind:function	line:262
+Type_Unknown	../src/staticAnalyzer.py	/^def Type_Unknown(node):$/;"	kind:function	line:155
+__init__	../src/Node.py	/^    def __init__(self, node):$/;"	kind:member	line:14
+add	../src/Translations.py	/^def add(node):$/;"	kind:function	line:340
+allNodes	../src/Node.py	/^allNodes = {}$/;"	kind:variable	line:2
+allocate	../src/Translations.py	/^def allocate(node):$/;"	kind:function	line:361
+allocateHeader	../src/Translations.py	/^def allocateHeader(node, appendName):$/;"	kind:function	line:343
+analyze	../src/staticAnalyzer.py	/^def analyze(node):$/;"	kind:function	line:186
+assign	../src/Translations.py	/^def assign(node):$/;"	kind:function	line:364
+blocks	../src/Translations.py	/^blocks = []$/;"	kind:variable	line:2
+currentPacketAllocationPosition	../src/Translations.py	/^currentPacketAllocationPosition = 0$/;"	kind:variable	line:4
+declareParameters	../src/Translations.py	/^def declareParameters(node):$/;"	kind:function	line:311
+formatATNode	../src/Translations.py	/^def formatATNode(node): # :@$/;"	kind:function	line:372
+frozenVariables	../src/staticAnalyzer.py	/^frozenVariables = set()$/;"	kind:variable	line:5
+greater	../src/Translations.py	/^def greater(node):$/;"	kind:function	line:337
+headers	../src/Translations.py	/^headers = []$/;"	kind:variable	line:3
+ifStatement	../src/Translations.py	/^def ifStatement(node):$/;"	kind:function	line:323
+isExternal	../src/Translations.py	/^def isExternal(node):$/;"	kind:function	line:382
+program	../src/P4_to_SEFL.py	/^    program = json.load(data_file)$/;"	kind:variable	line:7
+run	../src/Translations.py	/^def run(node):$/;"	kind:function	line:6
+staticAnalyzer.py	../src/staticAnalyzer.py	1;"	kind:file	line:1
+toSEFL	../src/Translations.py	/^def toSEFL(node):$/;"	kind:function	line:15

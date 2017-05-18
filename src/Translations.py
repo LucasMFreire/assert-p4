@@ -4,6 +4,7 @@ headers = []
 structFieldsHeaderTypes = {}
 headerStackSize = {}
 currentPacketAllocationPosition = 0
+emitPosition = 0
 
 def run(node):
     returnString = ""
@@ -202,10 +203,26 @@ def MethodCallExpression(node):
                     returnString += "\tAssign('" + headerToExtract + "." + field.name + "', SymbolicValue()),\n"
         returnString = returnString[:-2]
     # emit method
-        # if ...
+    elif hasattr(node.method, 'member') and node.method.member == "emit":
+        hdrName = toSEFL(node.arguments.vec[0])
+        returnString += "//Emit " + hdrName + "\n\t"
+        headerName = ""
+        if node.arguments.vec[0].Node_Type == "ArrayIndex":
+            headerName = node.arguments.vec[0].left.member
+        else:
+            headerName = hdrName.split(".")[1]
+        for header in headers:
+            if header[0] == structFieldsHeaderTypes[headerName]:
+                for field in header[1]:
+                    returnString += "CreateTag('" + hdrName + "." + field.name + "', " + str(emitPosition) + "),\n\t"
+                    returnString += "Allocate(Tag('" + hdrName + "." + field.name + "'), " + str(field.type.size) + "),\n\t"
+                    returnString += "Assign(Tag('" + hdrName + "." + field.name + "'), " + formatATNode(node.arguments.vec[0]) + "),\n\t"
+                    global emitPosition
+                    emitPosition += field.type.size
+        returnString = returnString[:-3]
     # extern method: Name it as extern for later processing
     elif hasattr(node.method, 'expr') and node.method.expr.type.Node_Type == "Type_Extern":
-        returnString =  "//Extern: " + toSEFL(node.method)
+        returnString +=  "//Extern: " + toSEFL(node.method)
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
         returnString += "If(Constrain('" + node.arguments.vec[0].path.name + "', :==:(ConstantValue(0))), Fail('" + node.arguments.vec[1].member + "')"
@@ -533,7 +550,7 @@ def assign(node):
 
 def formatATNode(node): # :@
     value = ""
-    if node.Node_Type == 'PathExpression' or node.Node_Type == 'Member' :
+    if node.Node_Type == 'PathExpression' or node.Node_Type == 'Member' or  node.Node_Type =='ArrayIndex':
         value = ":@('" + str(toSEFL(node)) + "')"
     elif isExternal(node):
         value = "SymbolicValue()"
