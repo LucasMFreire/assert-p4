@@ -20,6 +20,7 @@ def toSEFL(node):
     if 'Vector' in node.Node_Type:
         returnString = ""
         for v in node.vec:
+            #returnString += "<<" + str(v.Node_ID) + ">>"
             returnString += toSEFL(v) + "\n"
         return returnString
     else:
@@ -31,10 +32,14 @@ def P4Program(node):
     return toSEFL(node.declarations)
 
 def P4Control(node):
-    returnString = ""
+    returnString = "//Control\n"
+    returnString += "val " + node.name + " = InstructionBlock(\n\t"
     returnString += toSEFL(node.type.applyParams)
+    for v in node.body.components.vec:
+       returnString += toSEFL(v) + ",\n\t"
+    returnString = returnString[:-3]
+    returnString += "\n)\n\n"
     returnString += toSEFL(node.controlLocals)
-    returnString += toSEFL(node.body)
     return returnString
 
 def BlockStatement(node):
@@ -252,11 +257,11 @@ def P4Action(node):
 def P4Table(node):
     return "//Table\nval " + str(node.name) + " = InstructionBlock(\n" + toSEFL(node.properties) + ")\n\n"
 
-def Parameter(node):
-    return allocate(node)
-
 def ParameterList(node):
-    return toSEFL(node.parameters)
+    returnString = ""
+    for parameter in node.parameters.vec:
+        returnString += allocate(parameter) + ",\n\t"
+    return returnString
 
 def Path(node):
     return node.name
