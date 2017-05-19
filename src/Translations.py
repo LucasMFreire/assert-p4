@@ -469,6 +469,8 @@ def ifStatement(node):
         elif node.condition.Node_Type == 'LNot' and node.condition.expr.Node_Type == 'PathExpression':
             condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
             condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
+        elif node.condition.Node_Type == 'MethodCallExpression' and node.condition.method.member == 'isValid':
+             condition = "'"+ str(toSEFL(node.condition)) + "', :==:(ConstantValue(1))"
         else:
             condition = str(toSEFL(node.condition))
         returnString = "If(Constrain(" + condition + "), " + str(toSEFL(node.ifTrue))
