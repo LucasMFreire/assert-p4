@@ -1,7 +1,8 @@
 
 blocks = []
 headers = []
-structFieldsHeaderTypes = {}
+structFieldsHeaderTypes = {} #structField, structFieldType
+structs = {} # structName, listOfFields
 headerStackSize = {}
 currentPacketAllocationPosition = 0
 emitPosition = 0
@@ -217,7 +218,7 @@ def MethodCallExpression(node):
         else:
             headerName = hdrName.split(".")[1]
         for header in headers:
-            if header[0] == structFieldsHeaderTypes[headerName]:
+            if header[0] == getHeaderType(headerName):
                 for field in header[1]:
                     returnString += "CreateTag('" + hdrName + "." + field.name + "', " + str(emitPosition) + "),\n\t"
                     returnString += "Allocate(Tag('" + hdrName + "." + field.name + "'), " + str(field.type.size) + "),\n\t"
@@ -349,10 +350,10 @@ def StructField(node):
     #future solution: discriminate by struct name
     if  node.type.Node_Type == "Type_Name":
         structFieldsHeaderTypes[node.name] = node.type.path.name
-    if  node.type.Node_Type == "Type_Stack":
+    elif  node.type.Node_Type == "Type_Stack":
         structFieldsHeaderTypes[node.name] = node.type.elementType.path.name
         headerStackSize[node.name] = node.type.size.value
-        returnString += ",\nAllocate('" + node.name + "Index')" 
+        returnString += ",\nAllocate('" + node.name + "Index')"
     return returnString
 
 def SwitchCase(node):
@@ -388,6 +389,7 @@ def Type_Package(node):
     return "<Type_Package>" + str(node.Node_ID)
 
 def Type_Struct(node):
+    structs[node.name] = node.fields.vec 
     return toSEFL(node.fields)
 
 def Type_Table(node):
@@ -418,9 +420,11 @@ def Type_Header(node):
     return ""
 
 def P4Parser(node):
-    returnString = declareParameters(node)
-    returnString += toSEFL(node.parserLocals)
+    returnString = toSEFL(node.parserLocals)
     returnString += toSEFL(node.states)
+    returnString += "val " + node.name + " = InstructionBlock(\n"
+    returnString += declareParameters(node)
+    returnString += "\tstart\n)\n"
     return returnString 
 
 def Type_Enum(node):
@@ -448,14 +452,29 @@ def ParserState(node):
 def declareParameters(node):
     returnString = ""
     for param in node.type.applyParams.parameters.vec:
-        if param.direction == "out" and param.type.Node_Type == 'Type_Name':
-            for header in headers:
-                if header[0] == param.type.path.name:
-                    returnString += "Allocate('validityBit_" + param.name + "'),\n"
-                    returnString += "Assign('validityBit_" + param.name + "', ConstantValue(0)),\n"
-                    for field in header[1]:
-                        returnString += allocateHeader(field, "_" + param.name) + ",\n"
+        if (param.direction == "out" or param.direction == "inout") and param.type.Node_Type == 'Parameter':
+            returnString += declareParameter(param.type)
+        if (param.direction == "out" or param.direction == "inout") and param.type.Node_Type == 'Type_Name':
+            returnString += declareParameter(param)
     return returnString + "\n"
+
+def declareParameter(param):
+    returnString = "\n\t//Allocate " + param.name + "\n"
+    for h in structs[param.type.path.name]:
+        if h.name in structFieldsHeaderTypes:
+            for header in headers:
+                if header[0] == getHeaderType(h.name):
+                    returnString += "\tAllocate('" + param.name + "." + h.name + ".isValid'),\n"
+                    returnString += "\tAssign('" + param.name + "." + h.name + ".isValid', ConstantValue(0)),\n"
+                    for field in header[1]:
+                        returnString += "\tAllocate('" + param.name + "." + h.name +  "." + field.name + "'),\n"
+            if getHeaderType(h.name) in structs:
+                for field in structs[getHeaderType(h.name)]:
+                    returnString += "\tAllocate('" + param.name + "." + h.name +  "." + field.name + "'),\n"
+        else: # struct field is not a header
+            returnString += "\tAllocate('" + param.name + "." + h.name + "'),\n"
+            returnString += "\tAssign('" + param.name + "." + h.name + "', SymbolicValue()),\n"
+    return returnString
 
 def ifStatement(node):
     condition = ""
