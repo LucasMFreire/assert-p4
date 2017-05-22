@@ -222,7 +222,7 @@ def MethodCallExpression(node):
                 for field in header[1]:
                     returnString += "CreateTag('" + hdrName + "." + field.name + "', " + str(emitPosition) + "),\n\t"
                     returnString += "Allocate(Tag('" + hdrName + "." + field.name + "'), " + str(field.type.size) + "),\n\t"
-                    returnString += "Assign(Tag('" + hdrName + "." + field.name + "'), " + formatATNode(node.arguments.vec[0]) + "),\n\t"
+                    returnString += "Assign(Tag('" + hdrName + "." + field.name + "'), :@('" + hdrName + "." + field.name + "')),\n\t"
                     global emitPosition
                     emitPosition += field.type.size
         returnString = returnString[:-3]
