@@ -353,7 +353,6 @@ def StructField(node):
     elif  node.type.Node_Type == "Type_Stack":
         structFieldsHeaderTypes[node.name] = node.type.elementType.path.name
         headerStackSize[node.name] = node.type.size.value
-        returnString += ",\nAllocate('" + node.name + "Index')"
     return returnString
 
 def SwitchCase(node):
@@ -462,18 +461,32 @@ def declareParameter(param):
     returnString = "\n\t//Allocate " + param.name + "\n"
     for h in structs[param.type.path.name]:
         if h.name in structFieldsHeaderTypes:
-            for header in headers:
-                if header[0] == getHeaderType(h.name):
-                    returnString += "\tAllocate('" + param.name + "." + h.name + ".isValid'),\n"
-                    returnString += "\tAssign('" + param.name + "." + h.name + ".isValid', ConstantValue(0)),\n"
-                    for field in header[1]:
-                        returnString += "\tAllocate('" + param.name + "." + h.name +  "." + field.name + "'),\n"
-            if getHeaderType(h.name) in structs:
-                for field in structs[getHeaderType(h.name)]:
-                    returnString += "\tAllocate('" + param.name + "." + h.name +  "." + field.name + "'),\n"
+            if h.name in headerStackSize:
+                returnString += "\tAllocate('" + h.name + "Index'),\n"
+                returnString += "\tAssign('" + h.name + "Index', ConstantValue(0)),\n"
+                for i in range(0, headerStackSize[h.name]):
+                    returnString += allocateHeader(param, h, i)
+            else:
+                returnString += allocateHeader(param, h)
         else: # struct field is not a header
             returnString += "\tAllocate('" + param.name + "." + h.name + "'),\n"
             returnString += "\tAssign('" + param.name + "." + h.name + "', SymbolicValue()),\n"
+    return returnString
+
+def allocateHeader(param, h, stackIndex = -1):
+    returnString = ""
+    index = ""
+    if stackIndex != -1:
+        index = "_" + str(stackIndex)
+    for header in headers:
+        if header[0] == getHeaderType(h.name):
+            returnString += "\tAllocate('" + param.name + "." + h.name + index + ".isValid'),\n"
+            returnString += "\tAssign('" + param.name + "." + h.name + index + ".isValid', ConstantValue(0)),\n"
+            for field in header[1]:
+                returnString += "\tAllocate('" + param.name + "." + h.name + index +  "." + field.name + "'),\n"
+    if getHeaderType(h.name) in structs:
+        for field in structs[getHeaderType(h.name)]:
+            returnString += "\tAllocate('" + param.name + "." + h.name + index + "." + field.name + "'),\n"
     return returnString
 
 def ifStatement(node):
@@ -544,24 +557,6 @@ def add(node):
 
 def sub(node):
     return ":-:(" + formatATNode(node.left) + ", " + formatATNode(node.right) + ")"
-
-def allocateHeader(node, appendName):
-    returnString = ""
-    global currentPacketAllocationPosition
-    returnString += "CreateTag('" + node.name + appendName +  "', " + str(currentPacketAllocationPosition) + "),\n"
-    if node.type.Node_Type == 'Type_Bits':
-        currentPacketAllocationPosition += node.type.size
-        returnString += "Allocate(Tag('" + node.name + appendName +  "'), " + str(node.type.size) + ")"
-    elif node.type.Node_Type == 'Type_Boolean':
-        currentPacketAllocationPosition += 1
-        returnString += "Allocate(Tag('" + node.name + appendName + "'), 1)" #assuming boolean size is 1 bit
-    elif node.type.Node_Type == 'Type_Name':
-        pass
-    elif node.type.Node_Type == 'Type_Stack':
-        returnString += "// " + str(node.type.elementType.path.name) + "[" + str(node.type.size.value) + "] " + str(node.name)
-    else:
-        raise ValueError('Allocating unknown node type: ' + node.type.Node_Type)
-    return returnString
 
 def allocate(node):
     return "Allocate('" + node.name + "')"
