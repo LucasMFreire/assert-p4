@@ -23,7 +23,9 @@ def toSEFL(node):
         returnString = ""
         for v in node.vec:
             #returnString += "<<" + str(v.Node_ID) + ">>"
-            returnString += toSEFL(v) + "\n"
+            nodeString = toSEFL(v)
+            if nodeString != "":
+                returnString += nodeString + "\n"
         return returnString
     else:
         return globals()[node.Node_Type](node) #calls corresponding type function according to node type
@@ -39,12 +41,14 @@ def P4Control(node):
     actionsAndTables = []
     for local in node.controlLocals.vec:
         if local.Node_Type == "Declaration_Variable" or local.Node_Type == "Declaration_Instance":
-            returnString += toSEFL(local) + ",\n\t"
+            nodeString = toSEFL(local)
+            if nodeString != "":
+                returnString += nodeString + ",\n\t"
         else:
             actionsAndTables.append(local)
     #returnString += toSEFL(node.type.applyParams)
     for v in node.body.components.vec:
-       returnString += toSEFL(v) + ",\n\t"
+        returnString += toSEFL(v) + ",\n\t"
     if len(node.body.components.vec) > 0:
         returnString = returnString[:-3]
     returnString += "\n)\n\n"
@@ -56,7 +60,9 @@ def BlockStatement(node):
     blockName = "block" + str(node.Node_ID)
     components = ""
     for v in node.components.vec:
-        components = components + "\t" + toSEFL(v) + ",\n"
+        nodeString = toSEFL(v)
+        if nodeString != "":
+            components = components + "\t" + nodeString + ",\n"
     components = components[:-2]
     block = "val " + blockName + " = InstructionBlock(\n" + components + "\n)\n\n"
     blocks.append(block)
@@ -138,7 +144,7 @@ def ConstructorCallExpression(node):
     return "<ConstructorCallExpression>" + str(node.Node_ID) 
 
 def Declaration_Instance(node):
-    return "<Declaration_Instance>" + str(node.Node_ID) 
+    return ""
 
 def Declaration_Variable(node):
     if  node.type.Node_Type == 'Type_Name':
@@ -195,56 +201,17 @@ def MethodCallExpression(node):
     returnString = ""
     # extract method
     if hasattr(node.method, 'member') and node.method.member == "extract":
-        headerToExtract = toSEFL(node.arguments.vec[0])
-        returnString += "// extract " + headerToExtract + "\n"
-        for header in headers:
-            # header stack position
-            if node.arguments.vec[0].Node_Type == "ArrayIndex":
-                if header[0] == getHeaderType(node.arguments.vec[0].left.member):
-                    headerToExtract = node.arguments.vec[0].left.expr.path.name
-                    returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
-                    for field in header[1]:
-                        returnString += "\tAssign('" + headerToExtract + "." + "_" + str(node.arguments.vec[0].right.value) + field.name + "', SymbolicValue()),\n"
-            # next header stack element
-            elif node.arguments.vec[0].member == "next":
-                if header[0] == getHeaderType(node.arguments.vec[0].expr.member):
-                    hdr = headerToExtract.split(".")[1] #remove next keyword
-                    for i in range(0, headerStackSize[hdr]):
-                        returnString += "\tIf('" + hdr + "Index', :==:(ConstantValue(" + str(i) + ")),\n\t\tinstructionBlock(\n"
-                        returnString += "\t\t\tAssign('" + hdr +  "_" + str(i) + ".isValid" + "', ConstantValue(1)),\n"
-                        for field in header[1]:
-                            returnString += "\t\t\tAssign('" + hdr + "_" + str(i) + "." + field.name + "', SymbolicValue()),\n"
-                        returnString = returnString[:-2]
-                        returnString += "),\n"  
-                    returnString = returnString[:-2] 
-                    for i in range(0, headerStackSize[hdr]):
-                        returnString += ")"
-                    returnString += ",\n\tAssign('" + hdr + "Index', :+:('" + hdr + "Index',ConstantValue(1))),\n"
-            #regular header field
-            elif header[0] == getHeaderType(node.arguments.vec[0].member):
-                returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
-                for field in header[1]:
-                    returnString += "\tAssign('" + headerToExtract + "." + field.name + "', SymbolicValue()),\n"
-        returnString = returnString[:-2]
+        returnString += extract(node)
     # emit method
     elif hasattr(node.method, 'member') and node.method.member == "emit":
-        hdrName = toSEFL(node.arguments.vec[0])
-        returnString += "//Emit " + hdrName + "\n\t"
-        headerName = ""
-        if node.arguments.vec[0].Node_Type == "ArrayIndex":
-            headerName = node.arguments.vec[0].left.member
-        else:
-            headerName = hdrName.split(".")[1]
-        for header in headers:
-            if header[0] == getHeaderType(headerName):
-                for field in header[1]:
-                    returnString += "CreateTag('" + hdrName + "." + field.name + "', " + str(emitPosition) + "),\n\t"
-                    size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
-                    returnString += "Allocate(Tag('" + hdrName + "." + field.name + "'), " + str(size) + "),\n\t"
-                    returnString += "Assign(Tag('" + hdrName + "." + field.name + "'), :@('" + hdrName + "." + field.name + "')),\n\t"
-                    global emitPosition
-                    emitPosition += size
-        returnString = returnString[:-3]
+        returnString += emit(node)
+    # read register, TODO: separate this into an 'extern methods' method
+    elif hasattr(node.method, 'member') and node.method.member == "read":
+        returnString += "Assign('" + toSEFL(node.arguments.vec[0]) + "', SymbolicValue())"
+    # write register, TODO: separate this into an 'extern methods' method
+    elif hasattr(node.method, 'member') and node.method.member == "write":
+        #ignore it
+        pass
     # extern method: Name it as extern for later processing
     elif hasattr(node.method, 'expr') and node.method.expr.type.Node_Type == "Type_Extern":
         returnString +=  "//Extern: " + toSEFL(node.method)
@@ -427,7 +394,7 @@ def Type_Error(node):
     return "<Type_Error>" + str(node.Node_ID)
 
 def Type_Extern(node):
-    return "<Type_Extern>" + str(node.Node_ID)
+    return ""
 
 def Declaration_MatchKind(node):
     return "<Declaration_MatchKind>" + str(node.Node_ID)
@@ -618,6 +585,59 @@ def isExternal(node):
 
 def getHeaderType(headerName):
     return structFieldsHeaderTypes[headerName]
+
+def emit(node):
+    returnString = ""
+    hdrName = toSEFL(node.arguments.vec[0])
+    returnString += "//Emit " + hdrName + "\n\t"
+    headerName = ""
+    if node.arguments.vec[0].Node_Type == "ArrayIndex":
+        headerName = node.arguments.vec[0].left.member
+    else:
+        headerName = hdrName.split(".")[1]
+    for header in headers:
+        if header[0] == getHeaderType(headerName):
+            for field in header[1]:
+                returnString += "CreateTag('" + hdrName + "." + field.name + "', " + str(emitPosition) + "),\n\t"
+                size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
+                returnString += "Allocate(Tag('" + hdrName + "." + field.name + "'), " + str(size) + "),\n\t"
+                returnString += "Assign(Tag('" + hdrName + "." + field.name + "'), :@('" + hdrName + "." + field.name + "')),\n\t"
+                global emitPosition
+                emitPosition += size
+    return returnString[:-3]
+
+def extract(node):
+    headerToExtract = toSEFL(node.arguments.vec[0])
+    returnString = "//Extract " + headerToExtract + "\n"
+    for header in headers:
+        # header stack position
+        if node.arguments.vec[0].Node_Type == "ArrayIndex":
+            if header[0] == getHeaderType(node.arguments.vec[0].left.member):
+                headerToExtract = node.arguments.vec[0].left.expr.path.name
+                returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
+                for field in header[1]:
+                    returnString += "\tAssign('" + headerToExtract + "." + "_" + str(node.arguments.vec[0].right.value) + field.name + "', SymbolicValue()),\n"
+        # next header stack element
+        elif node.arguments.vec[0].member == "next":
+            if header[0] == getHeaderType(node.arguments.vec[0].expr.member):
+                hdr = headerToExtract.split(".")[1] #remove next keyword
+                for i in range(0, headerStackSize[hdr]):
+                    returnString += "\tIf('" + hdr + "Index', :==:(ConstantValue(" + str(i) + ")),\n\t\tinstructionBlock(\n"
+                    returnString += "\t\t\tAssign('" + hdr +  "_" + str(i) + ".isValid" + "', ConstantValue(1)),\n"
+                    for field in header[1]:
+                        returnString += "\t\t\tAssign('" + hdr + "_" + str(i) + "." + field.name + "', SymbolicValue()),\n"
+                    returnString = returnString[:-2]
+                    returnString += "),\n"  
+                returnString = returnString[:-2] 
+                for i in range(0, headerStackSize[hdr]):
+                    returnString += ")"
+                returnString += ",\n\tAssign('" + hdr + "Index', :+:('" + hdr + "Index',ConstantValue(1))),\n"
+        #regular header field
+        elif header[0] == getHeaderType(node.arguments.vec[0].member):
+            returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
+            for field in header[1]:
+                returnString += "\tAssign('" + headerToExtract + "." + field.name + "', SymbolicValue()),\n"
+    return returnString[:-2]
 
 # ---- V1 specific ----
 
