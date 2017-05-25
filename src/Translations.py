@@ -6,6 +6,7 @@ structs = {} # structName, listOfFields
 headerStackSize = {}
 currentPacketAllocationPosition = 0
 emitPosition = 0
+typedef = {} #typedefName, typedefNode
 
 def run(node):
     returnString = ""
@@ -35,12 +36,20 @@ def P4Program(node):
 def P4Control(node):
     returnString = "//Control\n"
     returnString += "val " + node.name + " = InstructionBlock(\n\t"
-    returnString += toSEFL(node.type.applyParams)
+    actionsAndTables = []
+    for local in node.controlLocals.vec:
+        if local.Node_Type == "Declaration_Variable" or local.Node_Type == "Declaration_Instance":
+            returnString += toSEFL(local) + ",\n\t"
+        else:
+            actionsAndTables.append(local)
+    #returnString += toSEFL(node.type.applyParams)
     for v in node.body.components.vec:
        returnString += toSEFL(v) + ",\n\t"
-    returnString = returnString[:-3]
+    if len(node.body.components.vec) > 0:
+        returnString = returnString[:-3]
     returnString += "\n)\n\n"
-    returnString += toSEFL(node.controlLocals)
+    for at in actionsAndTables:
+        returnString += toSEFL(at) + "\n"
     return returnString
 
 def BlockStatement(node):
@@ -64,6 +73,12 @@ def BXor(node):
 
 def Cast(node):
     return "<Cast>" + str(node.Node_ID)
+
+def Geq(node):
+    return "<Geq>" + str(node.Node_ID)
+
+def Leq(node):
+    return "<Leq>" + str(node.Node_ID)
 
 def LAnd(node):
     return "<LAnd>" + str(node.Node_ID)
@@ -171,7 +186,10 @@ def Member(node):
         return toSEFL(node.expr)
 
 def Method(node):
-    return toSEFL(node.type)
+    if node.name == "mark_to_drop": #V1 specific
+        return mark_to_drop()
+    else:
+        return toSEFL(node.type)
 
 def MethodCallExpression(node):
     returnString = ""
@@ -221,10 +239,11 @@ def MethodCallExpression(node):
             if header[0] == getHeaderType(headerName):
                 for field in header[1]:
                     returnString += "CreateTag('" + hdrName + "." + field.name + "', " + str(emitPosition) + "),\n\t"
-                    returnString += "Allocate(Tag('" + hdrName + "." + field.name + "'), " + str(field.type.size) + "),\n\t"
+                    size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
+                    returnString += "Allocate(Tag('" + hdrName + "." + field.name + "'), " + str(size) + "),\n\t"
                     returnString += "Assign(Tag('" + hdrName + "." + field.name + "'), :@('" + hdrName + "." + field.name + "')),\n\t"
                     global emitPosition
-                    emitPosition += field.type.size
+                    emitPosition += size
         returnString = returnString[:-3]
     # extern method: Name it as extern for later processing
     elif hasattr(node.method, 'expr') and node.method.expr.type.Node_Type == "Type_Extern":
@@ -311,8 +330,11 @@ def selectSingle(node, cases, exp):
         elif case.keyset.Node_Type == 'Constant':
             returnString += "If(Constrain('" + str(exp[0]) + "', :==:(ConstantValue(" + str(case.keyset.value) + "))), " + case.state.path.name + ",\n\t"
     #close with ) according to cases length
-    for i in range(0, len(cases) - 1):
-        returnString += ")"
+    if len(cases) == 1:
+        returnString = returnString[:-3] + ")"
+    else:
+        for i in range(0, len(cases) - 1):
+            returnString += ")"
     return returnString
 
 def selectMultiple(node, cases, exp):
@@ -395,8 +417,9 @@ def Type_Table(node):
     return toSEFL(node.table)
 
 def Type_Typedef(node):
-    return "<Type_Typedef>" + str(node.Node_ID)
-
+    typedef[node.name] = node
+    return ""
+    
 def Type_Unknown(node):
     return "<Type_Unknown>" + str(node.Node_ID)
 
@@ -439,6 +462,8 @@ def ParserState(node):
     expression = ""
     if hasattr(node, 'selectExpression'):
         expression = toSEFL(node.selectExpression)
+    if node.name == "reject":
+        expression += "Fail('Packet dropped')"
     parser = "val " + node.name + " = InstructionBlock(\n" + components + "\t" + expression + "\n)\n\n"
     return parser
 
@@ -563,7 +588,13 @@ def allocate(node):
 
 def assign(node):
     if node.right.Node_Type == "Equ":
-        returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :==:(" + str(toSEFL(node.right.right))  + ")), " + \
+        returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :==:(" + formatATNode(node.right.right)  + ")), " + \
+                       "Assign('" + str(toSEFL(node.left)) + "', ConstantValue(1)), Assign('" + str(toSEFL(node.left)) + "', ConstantValue(0)))"
+    elif node.right.Node_Type == "Geq":
+        returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :>=:(" + formatATNode(node.right.right)  + ")), " + \
+                       "Assign('" + str(toSEFL(node.left)) + "', ConstantValue(1)), Assign('" + str(toSEFL(node.left)) + "', ConstantValue(0)))"
+    elif node.right.Node_Type == "Leq":
+        returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :<=:(" + formatATNode(node.right.right)  + ")), " + \
                        "Assign('" + str(toSEFL(node.left)) + "', ConstantValue(1)), Assign('" + str(toSEFL(node.left)) + "', ConstantValue(0)))"
     else:
         returnString = "Assign('" + str(toSEFL(node.left)) + "', " + formatATNode(node.right) + ")"
@@ -573,6 +604,8 @@ def formatATNode(node): # :@
     value = ""
     if node.Node_Type == 'PathExpression' or node.Node_Type == 'Member' or  node.Node_Type =='ArrayIndex':
         value = ":@('" + str(toSEFL(node)) + "')"
+    elif node.Node_Type == 'Cast':
+        value = formatATNode(node.expr)
     elif isExternal(node):
         value = "SymbolicValue()"
     else:
@@ -585,3 +618,8 @@ def isExternal(node):
 
 def getHeaderType(headerName):
     return structFieldsHeaderTypes[headerName]
+
+# ---- V1 specific ----
+
+def mark_to_drop():
+    return "val mark_to_drop = Fail('Packet dropped')\n"
