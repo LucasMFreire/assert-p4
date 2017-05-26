@@ -144,8 +144,15 @@ def ConstructorCallExpression(node):
     return "<ConstructorCallExpression>" + str(node.Node_ID) 
 
 def Declaration_Instance(node):
-    return ""
-
+    returnString = ""
+    if node.name == "main":
+        parser = node.arguments.vec[0].type.path.name
+        ingress = node.arguments.vec[2].type.path.name
+        egress = node.arguments.vec[3].type.path.name
+        deparser = node.arguments.vec[5].type.path.name
+        returnString += "val main = InstructionBlock(" +  parser + ", " + ingress + ", " + egress + ", " + deparser +  ")\n"
+    return returnString        
+    
 def Declaration_Variable(node):
     if  node.type.Node_Type == 'Type_Name':
         returnString = ""
