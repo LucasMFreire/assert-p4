@@ -1,16 +1,21 @@
+TODO:
 
-- header instantiation
+- execute_meter
 
-    instead of allocating the header variables in specification, do it in declarations.
+- casts
 
-- instantiate parser parameters
+- <ConstructorCallExpression>13223
 
-- emit; look at packet_out variable for allocation, other stuff should be metadata
+- clone3
 
-- put control flow in its own block
+- “underflow” or “overflow” wrap around
+
+- bitwise operations
 
 ---------------------------------------------------------------------------------------------------
 
-- action_run is being forked
-- bitwise operations can not be modeled?
+OBS:
+
+- action_run is being forked, it is better to set a actionXRun variable 
+- can bitwise operations be modeled?
 - and/or would be useful
