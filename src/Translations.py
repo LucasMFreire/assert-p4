@@ -212,6 +212,9 @@ def MethodCallExpression(node):
     # emit method
     elif hasattr(node.method, 'member') and node.method.member == "emit":
         returnString += emit(node)
+     # execute meter, TODO: separate this into an 'extern methods' method
+    elif hasattr(node.method, 'member') and node.method.member == "execute_meter":
+        returnString += "Assign('" + toSEFL(node.arguments.vec[1]) + "', SymbolicValue())"
     # read register, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'member') and node.method.member == "read":
         returnString += "Assign('" + toSEFL(node.arguments.vec[0]) + "', SymbolicValue())"
