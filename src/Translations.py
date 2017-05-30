@@ -222,6 +222,10 @@ def MethodCallExpression(node):
     elif hasattr(node.method, 'member') and node.method.member == "write":
         #ignore it
         pass
+     # clone3, TODO: separate this into an 'extern methods' method
+    elif hasattr(node.method, 'path') and node.method.path.name == "clone3":
+         #ignore it
+        pass
     # extern method: Name it as extern for later processing
     elif hasattr(node.method, 'expr') and node.method.expr.type.Node_Type == "Type_Extern":
         returnString +=  "//Extern: " + toSEFL(node.method)
@@ -272,7 +276,7 @@ def Property(node):
     elif node.name == "size":
         return "\t// size " + toSEFL(node.value)
     else:
-        return toSEFL(node.value)
+        return ""
 
 def SelectExpression(node):
     expressions = node.select.components.vec
