@@ -8,6 +8,7 @@ currentPacketAllocationPosition = 0
 emitPosition = 0
 typedef = {} #typedefName, typedefNode
 actionIDs = {} #actionName, nodeID
+tableIDs = {} #tableName, nodeID
 
 def run(node):
     returnString = ""
@@ -103,9 +104,9 @@ def ActionList(node):
     returnString = "\tFork("
     for action in node.actionList.vec:
         if action.expression.Node_Type == "PathExpression":
-            returnString += action.expression.path.name + ", "
+            returnString += action.expression.path.name + "_" + str(actionIDs[action.expression.path.name]) + ", "
         elif action.expression.Node_Type == "MethodCallExpression":
-            returnString += action.expression.method.path.name + ", "
+            returnString += action.expression.method.path.name + "_" + str(actionIDs[action.expression.method.path.name]) + ", "
         else:
             returnString += "ERROR:UNKNOWN ACTION LIST TYPE"
     return returnString[:-2] + ")"
@@ -196,7 +197,11 @@ def Member(node):
     if node.member != 'apply':
         return toSEFL(node.expr) + "." + node.member
     else:
-        return toSEFL(node.expr)
+        nodeName = toSEFL(node.expr)
+        if nodeName in tableIDs.keys():
+            return nodeName + "_" + str(tableIDs[nodeName])
+        else:
+            return nodeName
 
 def Method(node):
     if node.name == "mark_to_drop": #V1 specific
@@ -254,10 +259,11 @@ def P4Action(node):
     for param in node.parameters.parameters.vec:
         if param.direction == "":
             actionData += "Assign('" + param.name + "', SymbolicValue()),\n\t"
-    return "// Action\nval " + str(node.name) + " = InstructionBlock(\n\t" + actionData + toSEFL(node.body) + "\n)\n\n"
+    return "// Action\nval " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n\t" + actionData + toSEFL(node.body) + "\n)\n\n"
 
 def P4Table(node):
-    return "//Table\nval " + str(node.name) + " = InstructionBlock(\n" + toSEFL(node.properties) + ")\n\n"
+    tableIDs[node.name] = node.Node_ID
+    return "//Table\nval " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n" + toSEFL(node.properties) + ")\n\n"
 
 def ParameterList(node):
     returnString = ""
@@ -276,6 +282,8 @@ def Property(node):
         return "\t// default_action " + toSEFL(node.value)
     elif node.name == "size":
         return "\t// size " + toSEFL(node.value)
+    elif node.name == "actions":
+        return toSEFL(node.value)
     else:
         return ""
 
