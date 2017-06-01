@@ -7,6 +7,7 @@ headerStackSize = {}
 currentPacketAllocationPosition = 0
 emitPosition = 0
 typedef = {} #typedefName, typedefNode
+actionIDs = {} #actionName, nodeID
 
 def run(node):
     returnString = ""
@@ -38,22 +39,21 @@ def P4Program(node):
 def P4Control(node):
     returnString = "//Control\n"
     returnString += "val " + node.name + " = InstructionBlock(\n\t"
-    actionsAndTables = []
+    actionsAndTables = ""
     for local in node.controlLocals.vec:
         if local.Node_Type == "Declaration_Variable" or local.Node_Type == "Declaration_Instance":
             nodeString = toSEFL(local)
             if nodeString != "":
                 returnString += nodeString + ",\n\t"
         else:
-            actionsAndTables.append(local)
+            actionsAndTables += toSEFL(local) + "\n"
     #returnString += toSEFL(node.type.applyParams)
     for v in node.body.components.vec:
         returnString += toSEFL(v) + ",\n\t"
     if len(node.body.components.vec) > 0:
         returnString = returnString[:-3]
     returnString += "\n)\n\n"
-    for at in actionsAndTables:
-        returnString += toSEFL(at) + "\n"
+    returnString += actionsAndTables
     return returnString
 
 def BlockStatement(node):
@@ -150,7 +150,7 @@ def Declaration_Instance(node):
         ingress = node.arguments.vec[2].type.path.name
         egress = node.arguments.vec[3].type.path.name
         deparser = node.arguments.vec[5].type.path.name
-        returnString += "val main = InstructionBlock(" +  parser + ", " + ingress + ", " + egress + ", " + deparser +  ")\n"
+        returnString += "val main = InstructionBlock(" +  parser + ", Allocate('action_run'), " + ingress + ", " + egress + ", " + deparser +  ")\n"
     return returnString        
     
 def Declaration_Variable(node):
@@ -249,7 +249,8 @@ def NameMapProperty(node):
     return "<NameMapProperty>" + str(node.Node_ID)
 
 def P4Action(node):
-    actionData = ""
+    actionIDs[node.name] = node.Node_ID
+    actionData = "Assign('action_run', " + str(node.Node_ID) + "), \n\t"
     for param in node.parameters.parameters.vec:
         if param.direction == "":
             actionData += "Assign('" + param.name + "', SymbolicValue()),\n\t"
@@ -362,8 +363,28 @@ def SwitchCase(node):
     return toSEFL(node.statement)
 
 def SwitchStatement(node):
-    switchCases = toSEFL(node.cases).replace("\n", ",")
-    returnString = "Fork(InstructionBlock(), " + switchCases[:-1] + ")"
+    returnString = ""
+    if node.expression.member == "action_run":
+        returnString += toSEFL(node.expression.expr) + ", \n\t"
+        defaultCase = None
+        openIf = 0
+        for case in node.cases.vec:
+            if case.label.Node_Type != "DefaultExpression":
+                returnString += "If(Constrain('action_run', :==:(" + str(actionIDs[toSEFL(case.label)]) + ")), " + toSEFL(case) + ", "
+                openIf += 1
+            else:
+                defaultCase = case
+        if defaultCase:
+            returnString += toSEFL(case)
+        else:
+            returnString = returnString[:-2]
+        for i in range(0, openIf):
+            returnString += ")"
+
+
+    else:
+        switchCases = toSEFL(node.cases).replace("\n", ",")
+        returnString = "Fork(InstructionBlock(), " + switchCases[:-1] + ")"
     return returnString
 
 def TableProperties(node):
