@@ -9,6 +9,7 @@ emitPosition = 0
 typedef = {} #typedefName, typedefNode
 actionIDs = {} #actionName, nodeID
 tableIDs = {} #tableName, nodeID
+declarationTypes = {} #instanceName, instanceType
 
 def run(node):
     returnString = ""
@@ -152,6 +153,8 @@ def Declaration_Instance(node):
         egress = node.arguments.vec[3].type.path.name
         deparser = node.arguments.vec[5].type.path.name
         returnString += "val main = InstructionBlock(" +  parser + ", Allocate('action_run'), " + ingress + ", " + egress + ", " + deparser +  ")\n"
+    elif hasattr(node.type, "path"):
+        declarationTypes[node.name] = node.type.path.name
     return returnString        
     
 def Declaration_Variable(node):
@@ -200,6 +203,8 @@ def Member(node):
         nodeName = toSEFL(node.expr)
         if nodeName in tableIDs.keys():
             return nodeName + "_" + str(tableIDs[nodeName])
+        elif nodeName in declarationTypes.keys():
+            return declarationTypes[nodeName]
         else:
             return nodeName
 
