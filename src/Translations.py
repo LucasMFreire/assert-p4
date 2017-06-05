@@ -232,8 +232,12 @@ def MethodCallExpression(node):
     elif hasattr(node.method, 'member') and node.method.member == "write":
         #ignore it
         pass
-     # clone3, TODO: separate this into an 'extern methods' method
+    # clone3, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'path') and node.method.path.name == "clone3":
+         #ignore it
+        pass
+    # count, TODO: separate this into an 'extern methods' method
+    elif hasattr(node.method, 'member') and node.method.member == "count":
          #ignore it
         pass
     # extern method: Name it as extern for later processing
