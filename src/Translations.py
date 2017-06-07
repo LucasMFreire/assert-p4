@@ -100,6 +100,19 @@ def Slice(node):
 def Shl(node):
     return "<Shl>" + str(node.Node_ID)
 
+def Shr(node):
+    return "<Shr>" + str(node.Node_ID)
+
+def Mul(node):
+    returnString = ""
+    if node.left.Node_Type == "Constant":
+        returnString = mul_constant(node.left.value, node.right)
+    elif node.right.Node_Type == "Constant":
+        returnString = mul_constant(node.right.value, node.left)
+    else:
+        returnString = "<Mul>" + str(node.Node_ID)
+    return returnString
+
 def ActionList(node):
     #assuming every action will be forked
     returnString = "\tFork("
@@ -148,11 +161,11 @@ def ConstructorCallExpression(node):
 def Declaration_Instance(node):
     returnString = ""
     if node.name == "main":
-        parser = node.arguments.vec[0].type.path.name
-        ingress = node.arguments.vec[2].type.path.name
-        egress = node.arguments.vec[3].type.path.name
-        deparser = node.arguments.vec[5].type.path.name
-        returnString += "val main = InstructionBlock(" +  parser + ", Allocate('action_run'), " + ingress + ", " + egress + ", " + deparser +  ")\n"
+        parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
+        ingress = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
+        egress = node.arguments.vec[3].type.path.name if hasattr(node.arguments.vec[3].type, "path") else node.arguments.vec[3].type.name
+        deparser = node.arguments.vec[5].type.path.name if hasattr(node.arguments.vec[5].type, "path") else node.arguments.vec[5].type.name
+        returnString += "val main = InstructionBlock(" +  parser + ", Allocate(\"action_run\"), " + ingress + ", " + egress + ", " + deparser +  ")\n"
     elif hasattr(node.type, "path"):
         declarationTypes[node.name] = node.type.path.name
     return returnString        
@@ -162,10 +175,10 @@ def Declaration_Variable(node):
         returnString = ""
         for header in headers:
             if header[0] == node.type.path.name:
-                returnString += "Allocate('validityBit_" + node.name + "'),\n"
-                returnString += "Assign('validityBit_" + node.name + "', ConstantValue(0)),\n"
+                returnString += "Allocate('validityBit_" + node.name + "\"),\n"
+                returnString += "Assign('validityBit_" + node.name + "\", ConstantValue(0)),\n"
                 for field in header[1]:
-                    returnString += "Allocate('" + field.name + "_" + node.name + "'),"
+                    returnString += "Allocate(\"" + field.name + "_" + node.name + "\"),"
         return returnString
     return allocate(node)
 
@@ -173,10 +186,10 @@ def EmptyStatement(node):
     return "<EmptyStatement>" + str(node.Node_ID)
 
 def Neq(node):
-    return "'" + toSEFL(node.left) +  "', :~:(:==:(" + toSEFL(node.right) + "))"
+    return "\"" + toSEFL(node.left) +  "\", :~:(:==:(" + toSEFL(node.right) + "))"
 
 def Equ(node):
-    return "'" + toSEFL(node.left) +  "', :==:(" + toSEFL(node.right) + ")"
+    return "\"" + toSEFL(node.left) +  "\", :==:(" + toSEFL(node.right) + ")"
 
 def ExpressionValue(node):
     return toSEFL(node.expression) 
@@ -224,10 +237,10 @@ def MethodCallExpression(node):
         returnString += emit(node)
      # execute meter, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'member') and node.method.member == "execute_meter":
-        returnString += "Assign('" + toSEFL(node.arguments.vec[1]) + "', SymbolicValue())"
+        returnString += "Assign(\"" + toSEFL(node.arguments.vec[1]) + "\", SymbolicValue())"
     # read register, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'member') and node.method.member == "read":
-        returnString += "Assign('" + toSEFL(node.arguments.vec[0]) + "', SymbolicValue())"
+        returnString += "Assign(\"" + toSEFL(node.arguments.vec[0]) + "\", SymbolicValue())"
     # write register, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'member') and node.method.member == "write":
         #ignore it
@@ -245,13 +258,13 @@ def MethodCallExpression(node):
         returnString +=  "//Extern: " + toSEFL(node.method)
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
-        returnString += "If(Constrain('" + node.arguments.vec[0].path.name + "', :==:(ConstantValue(0))), Fail('" + node.arguments.vec[1].member + "')"
+        returnString += "If(Constrain(\"" + node.arguments.vec[0].path.name + "\", :==:(ConstantValue(0))), Fail(\"" + node.arguments.vec[1].member + "\")"
      #SetValid method
     elif hasattr(node.method, 'member') and node.method.member == "setValid":
-        returnString += "Assign('" + toSEFL(node.method.expr) + ".isValid', ConstantValue(1))"
+        returnString += "Assign(\"" + toSEFL(node.method.expr) + ".isValid\", ConstantValue(1))"
      #SetInvalid method
     elif hasattr(node.method, 'member') and node.method.member == "setInvalid":
-        returnString += "Assign('" + toSEFL(node.method.expr) + ".isValid', ConstantValue(0))"
+        returnString += "Assign(\"" + toSEFL(node.method.expr) + ".isValid\", ConstantValue(0))"
     else:
         returnString = toSEFL(node.method)
     return returnString
@@ -264,10 +277,10 @@ def NameMapProperty(node):
 
 def P4Action(node):
     actionIDs[node.name] = node.Node_ID
-    actionData = "Assign('action_run', " + str(node.Node_ID) + "), \n\t"
+    actionData = "Assign(\"action_run\", " + str(node.Node_ID) + "), \n\t"
     for param in node.parameters.parameters.vec:
         if param.direction == "":
-            actionData += "Assign('" + param.name + "', SymbolicValue()),\n\t"
+            actionData += "Assign(\"" + param.name + "\", SymbolicValue()),\n\t"
     return "// Action\nval " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n\t" + actionData + toSEFL(node.body) + "\n)\n\n"
 
 def P4Table(node):
@@ -327,7 +340,7 @@ def selectSingle(node, cases, exp):
         elif case.keyset.Node_Type == 'DefaultExpression':
             returnString += case.state.path.name
         elif case.keyset.Node_Type == 'Constant':
-            returnString += "If(Constrain('" + str(exp[0]) + "', :==:(ConstantValue(" + str(case.keyset.value) + "))), " + case.state.path.name + ",\n\t"
+            returnString += "If(Constrain(\"" + str(exp[0]) + "\", :==:(ConstantValue(" + str(case.keyset.value) + "))), " + case.state.path.name + ",\n\t"
     #close with ) according to cases length
     if len(cases) == 1:
         returnString = returnString[:-3] + ")"
@@ -338,27 +351,27 @@ def selectSingle(node, cases, exp):
 
 def selectMultiple(node, cases, exp):
     #not the best solution. Multiple branches can occur. AND statement would be better.
-    returnString = "Allocate('selectedMultipleParam'),\n\t"
-    returnString += "Assign('selectedMultipleParam', ConstantValue(0)),\n\t"
+    returnString = "Allocate(\"selectedMultipleParam\"),\n\t"
+    returnString += "Assign(\"selectedMultipleParam\", ConstantValue(0)),\n\t"
     for case in cases:
         if case.keyset.Node_Type == 'Mask':
             #todo: fix mask #bitop
             returnString = "//TODO: MASK\n"
         elif case.keyset.Node_Type == 'DefaultExpression':
-            returnString += "If(Constrain('selectedMultipleParam', :==:(ConstantValue(0))),\n\t\t"
-            returnString += "InstructionBlock(Assign('selectedMultipleParam', ConstantValue(1)), " + case.state.path.name + ")),\n\t"
+            returnString += "If(Constrain(\"selectedMultipleParam\", :==:(ConstantValue(0))),\n\t\t"
+            returnString += "InstructionBlock(Assign(\"selectedMultipleParam\", ConstantValue(1)), " + case.state.path.name + ")),\n\t"
         elif case.keyset.Node_Type == "ListExpression":
-            returnString += "If(Constrain('selectedMultipleParam', :==:(ConstantValue(0))), \n\t\t"
+            returnString += "If(Constrain(\"selectedMultipleParam\", :==:(ConstantValue(0))), \n\t\t"
             for idx,e in enumerate(exp):
                 if case.keyset.components.vec[idx].Node_Type == "Mask":
                     returnString += "//TODO: MASK\n"
                 else:
-                    returnString += "If(Constrain('" + str(e) + "', :==:(ConstantValue(" + str(case.keyset.components.vec[idx].value) + "))), \n\t\t"
-            returnString += "InstructionBlock(Assign('selectedMultipleParam', ConstantValue(1)), " + case.state.path.name + "))"
+                    returnString += "If(Constrain(\"" + str(e) + "\", :==:(ConstantValue(" + str(case.keyset.components.vec[idx].value) + "))), \n\t\t"
+            returnString += "InstructionBlock(Assign(\"selectedMultipleParam\", ConstantValue(1)), " + case.state.path.name + "))"
             for idx,e in enumerate(exp):
                 returnString += ")"
             returnString += ",\n\t"
-    returnString += "Deallocate('selectedMultipleParam')"
+    returnString += "Deallocate(\"selectedMultipleParam\")"
     return returnString
 
 def StringLiteral(node):
@@ -387,7 +400,7 @@ def SwitchStatement(node):
         openIf = 0
         for case in node.cases.vec:
             if case.label.Node_Type != "DefaultExpression":
-                returnString += "If(Constrain('action_run', :==:(" + str(actionIDs[toSEFL(case.label)]) + ")), " + toSEFL(case) + ", "
+                returnString += "If(Constrain(\"action_run\", :==:(" + str(actionIDs[toSEFL(case.label)]) + ")), " + toSEFL(case) + ", "
                 openIf += 1
             else:
                 defaultCase = case
@@ -482,7 +495,7 @@ def ParserState(node):
     if hasattr(node, 'selectExpression'):
         expression = toSEFL(node.selectExpression)
     if node.name == "reject":
-        expression += "Fail('Packet dropped')"
+        expression += "Fail(\"Packet dropped\")"
     parser = "val " + node.name + " = InstructionBlock(\n" + components + "\t" + expression + "\n)\n\n"
     return parser
 
@@ -506,15 +519,15 @@ def declareParameter(param):
     for h in structs[param.type.path.name]:
         if h.name in structFieldsHeaderTypes:
             if h.name in headerStackSize:
-                returnString += "\tAllocate('" + h.name + "Index'),\n"
-                returnString += "\tAssign('" + h.name + "Index', ConstantValue(0)),\n"
+                returnString += "\tAllocate(\"" + h.name + "Index\"),\n"
+                returnString += "\tAssign(\"" + h.name + "Index\", ConstantValue(0)),\n"
                 for i in range(0, headerStackSize[h.name]):
                     returnString += allocateHeader(param, h, i)
             else:
                 returnString += allocateHeader(param, h)
         else: # struct field is not a header
-            returnString += "\tAllocate('" + param.name + "." + h.name + "'),\n"
-            returnString += "\tAssign('" + param.name + "." + h.name + "', SymbolicValue()),\n"
+            returnString += "\tAllocate(\"" + param.name + "." + h.name + "\"),\n"
+            returnString += "\tAssign(\"" + param.name + "." + h.name + "\", SymbolicValue()),\n"
     return returnString
 
 def allocateHeader(param, h, stackIndex = -1):
@@ -524,13 +537,13 @@ def allocateHeader(param, h, stackIndex = -1):
         index = "_" + str(stackIndex)
     for header in headers:
         if header[0] == getHeaderType(h.name):
-            returnString += "\tAllocate('" + param.name + "." + h.name + index + ".isValid'),\n"
-            returnString += "\tAssign('" + param.name + "." + h.name + index + ".isValid', ConstantValue(0)),\n"
+            returnString += "\tAllocate(\"" + param.name + "." + h.name + index + ".isValid\"),\n"
+            returnString += "\tAssign(\"" + param.name + "." + h.name + index + ".isValid\", ConstantValue(0)),\n"
             for field in header[1]:
-                returnString += "\tAllocate('" + param.name + "." + h.name + index +  "." + field.name + "'),\n"
+                returnString += "\tAllocate(\"" + param.name + "." + h.name + index +  "." + field.name + "\"),\n"
     if getHeaderType(h.name) in structs:
         for field in structs[getHeaderType(h.name)]:
-            returnString += "\tAllocate('" + param.name + "." + h.name + index + "." + field.name + "'),\n"
+            returnString += "\tAllocate(\"" + param.name + "." + h.name + index + "." + field.name + "\"),\n"
     return returnString
 
 def ifStatement(node):
@@ -539,11 +552,11 @@ def ifStatement(node):
     if node.condition.Node_Type == 'LAnd' or node.condition.Node_Type == 'LOr':
         returnString += logicalExpression(node.condition)
         booleanStatement = node.condition.Node_Type + str(node.condition.Node_ID)
-        returnString += "If(Constrain('" + booleanStatement + "'), :==:(ConstantValue(1)), " + str(toSEFL(node.ifTrue))
+        returnString += "If(Constrain(\"" + booleanStatement + "\"), :==:(ConstantValue(1)), " + str(toSEFL(node.ifTrue))
         if hasattr(node, "ifFalse"):
             returnString += ", " + str(toSEFL(node.ifFalse))
         returnString += "),\n\t"
-        returnString += "Deallocate('" + booleanStatement + "')"
+        returnString += "Deallocate(\"" + booleanStatement + "\")"
     else:
         if node.condition.Node_Type == 'PathExpression':
             condition = formatATNode(node.condition) + ", :==:(ConstantValue(1))"
@@ -551,7 +564,7 @@ def ifStatement(node):
             condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
             condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
         elif node.condition.Node_Type == 'MethodCallExpression' and node.condition.method.member == 'isValid':
-             condition = "'"+ str(toSEFL(node.condition)) + "', :==:(ConstantValue(1))"
+             condition = "\""+ str(toSEFL(node.condition)) + "\", :==:(ConstantValue(1))"
         else:
             condition = str(toSEFL(node.condition))
         returnString = "If(Constrain(" + condition + "), " + str(toSEFL(node.ifTrue))
@@ -562,31 +575,31 @@ def ifStatement(node):
 
 def logicalExpression(node):
     booleanStatement = node.Node_Type + str(node.Node_ID)
-    returnString = "Allocate('" + booleanStatement + "'),\n\t"
+    returnString = "Allocate(\"" + booleanStatement + "\"),\n\t"
     leftIsLogicalExpression = node.left.Node_Type == 'LAnd' or node.left.Node_Type == 'LOr'
     rightIsLogicalExpression = node.right.Node_Type == 'LAnd' or node.right.Node_Type == 'LOr'
     if leftIsLogicalExpression:
         returnString += logicalExpression(node.left)
-        lExp = "'" + node.left.Node_Type + str(node.left.Node_ID) + "'"
+        lExp = "\"" + node.left.Node_Type + str(node.left.Node_ID) + "\""
     else:
         lExp = toSEFL(node.left)
     if rightIsLogicalExpression:
         returnString += logicalExpression(node.right)
-        rExp = "'" + node.right.Node_Type + str(node.right.Node_ID) + "'"
+        rExp = "\"" + node.right.Node_Type + str(node.right.Node_ID) + "\""
     else:
         rExp = toSEFL(node.right)
     if node.Node_Type == 'LAnd':
         returnString += "If(Constrain(" + lExp + "),\n\t\t"
         returnString += "If(Constrain(" + rExp + "),\n\t\t\t"
-        returnString += "Assign('" +  booleanStatement + "', ConstantValue(1)),\n\t\t"
-        returnString += "Assign('" + booleanStatement + "', ConstantValue(0))),\n\t"
-        returnString += "Assign('" + booleanStatement + "', ConstantValue(0))),\n\t"
+        returnString += "Assign(\"" +  booleanStatement + "\", ConstantValue(1)),\n\t\t"
+        returnString += "Assign(\"" + booleanStatement + "\", ConstantValue(0))),\n\t"
+        returnString += "Assign(\"" + booleanStatement + "\", ConstantValue(0))),\n\t"
     elif node.Node_Type == 'LOr':
         returnString += "If(Constrain(" + lExp + "),\n\t\t"
         returnString += "If(Constrain(" + rExp + "),\n\t\t\t"
-        returnString += "Assign('" +  booleanStatement + "', ConstantValue(1)),\n\t\t"
-        returnString += "Assign('" + booleanStatement+ "', ConstantValue(0))),\n\t"
-        returnString += "Assign('" + booleanStatement + "', ConstantValue(1))),\n\t"
+        returnString += "Assign(\"" +  booleanStatement + "\", ConstantValue(1)),\n\t\t"
+        returnString += "Assign(\"" + booleanStatement+ "\", ConstantValue(0))),\n\t"
+        returnString += "Assign(\"" + booleanStatement + "\", ConstantValue(1))),\n\t"
     if leftIsLogicalExpression:
         returnString += "Deallocate(" + lExp + "),\n\t"
     if rightIsLogicalExpression:
@@ -603,26 +616,26 @@ def sub(node):
     return ":-:(" + formatATNode(node.left) + ", " + formatATNode(node.right) + ")"
 
 def allocate(node):
-    return "Allocate('" + node.name + "')"
+    return "Allocate(\"" + node.name + "\")"
 
 def assign(node):
     if node.right.Node_Type == "Equ":
-        returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :==:(" + formatATNode(node.right.right)  + ")), " + \
-                       "Assign('" + str(toSEFL(node.left)) + "', ConstantValue(1)), Assign('" + str(toSEFL(node.left)) + "', ConstantValue(0)))"
+        returnString = "If(Constrain(\"" + str(toSEFL(node.right.left)) + "\", :==:(" + formatATNode(node.right.right)  + ")), " + \
+                       "Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(1)), Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(0)))"
     elif node.right.Node_Type == "Geq":
-        returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :>=:(" + formatATNode(node.right.right)  + ")), " + \
-                       "Assign('" + str(toSEFL(node.left)) + "', ConstantValue(1)), Assign('" + str(toSEFL(node.left)) + "', ConstantValue(0)))"
+        returnString = "If(Constrain(\"" + str(toSEFL(node.right.left)) + "\", :>=:(" + formatATNode(node.right.right)  + ")), " + \
+                       "Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(1)), Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(0)))"
     elif node.right.Node_Type == "Leq":
-        returnString = "If(Constrain('" + str(toSEFL(node.right.left)) + "', :<=:(" + formatATNode(node.right.right)  + ")), " + \
-                       "Assign('" + str(toSEFL(node.left)) + "', ConstantValue(1)), Assign('" + str(toSEFL(node.left)) + "', ConstantValue(0)))"
+        returnString = "If(Constrain(\"" + str(toSEFL(node.right.left)) + "\", :<=:(" + formatATNode(node.right.right)  + ")), " + \
+                       "Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(1)), Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(0)))"
     else:
-        returnString = "Assign('" + str(toSEFL(node.left)) + "', " + formatATNode(node.right) + ")"
+        returnString = "Assign(\"" + str(toSEFL(node.left)) + "\", " + formatATNode(node.right) + ")"
     return returnString
 
 def formatATNode(node): # :@
     value = ""
     if node.Node_Type == 'PathExpression' or node.Node_Type == 'Member' or  node.Node_Type =='ArrayIndex':
-        value = ":@('" + str(toSEFL(node)) + "')"
+        value = ":@(\"" + str(toSEFL(node)) + "\")"
     elif node.Node_Type == 'Cast':
         value = formatATNode(node.expr)
     elif isExternal(node):
@@ -650,10 +663,10 @@ def emit(node):
     for header in headers:
         if header[0] == getHeaderType(headerName):
             for field in header[1]:
-                returnString += "CreateTag('" + hdrName + "." + field.name + "', " + str(emitPosition) + "),\n\t"
+                returnString += "CreateTag(\"" + hdrName + "." + field.name + "\", " + str(emitPosition) + "),\n\t"
                 size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
-                returnString += "Allocate(Tag('" + hdrName + "." + field.name + "'), " + str(size) + "),\n\t"
-                returnString += "Assign(Tag('" + hdrName + "." + field.name + "'), :@('" + hdrName + "." + field.name + "')),\n\t"
+                returnString += "Allocate(Tag(\"" + hdrName + "." + field.name + "\"), " + str(size) + "),\n\t"
+                returnString += "Assign(Tag(\"" + hdrName + "." + field.name + "\"), :@(\"" + hdrName + "." + field.name + "\")),\n\t"
                 global emitPosition
                 emitPosition += size
     return returnString[:-3]
@@ -666,32 +679,45 @@ def extract(node):
         if node.arguments.vec[0].Node_Type == "ArrayIndex":
             if header[0] == getHeaderType(node.arguments.vec[0].left.member):
                 headerToExtract = node.arguments.vec[0].left.expr.path.name
-                returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
+                returnString += "\tAssign(\"" + headerToExtract + ".isValid\", ConstantValue(1)),\n"
                 for field in header[1]:
-                    returnString += "\tAssign('" + headerToExtract + "." + "_" + str(node.arguments.vec[0].right.value) + field.name + "', SymbolicValue()),\n"
+                    returnString += "\tAssign(\"" + headerToExtract + "." + "_" + str(node.arguments.vec[0].right.value) + field.name + "\", SymbolicValue()),\n"
         # next header stack element
         elif node.arguments.vec[0].member == "next":
             if header[0] == getHeaderType(node.arguments.vec[0].expr.member):
                 hdr = headerToExtract.split(".")[1] #remove next keyword
                 for i in range(0, headerStackSize[hdr]):
-                    returnString += "\tIf('" + hdr + "Index', :==:(ConstantValue(" + str(i) + ")),\n\t\tinstructionBlock(\n"
-                    returnString += "\t\t\tAssign('" + hdr +  "_" + str(i) + ".isValid" + "', ConstantValue(1)),\n"
+                    returnString += "\tIf(\"" + hdr + "Index\", :==:(ConstantValue(" + str(i) + ")),\n\t\tinstructionBlock(\n"
+                    returnString += "\t\t\tAssign(\"" + hdr +  "_" + str(i) + ".isValid" + "\", ConstantValue(1)),\n"
                     for field in header[1]:
-                        returnString += "\t\t\tAssign('" + hdr + "_" + str(i) + "." + field.name + "', SymbolicValue()),\n"
+                        returnString += "\t\t\tAssign(\"" + hdr + "_" + str(i) + "." + field.name + "\", SymbolicValue()),\n"
                     returnString = returnString[:-2]
                     returnString += "),\n"  
                 returnString = returnString[:-2] 
                 for i in range(0, headerStackSize[hdr]):
                     returnString += ")"
-                returnString += ",\n\tAssign('" + hdr + "Index', :+:('" + hdr + "Index',ConstantValue(1))),\n"
+                returnString += ",\n\tAssign(\"" + hdr + "Index\", :+:(\"" + hdr + "Index\",ConstantValue(1))),\n"
         #regular header field
         elif header[0] == getHeaderType(node.arguments.vec[0].member):
-            returnString += "\tAssign('" + headerToExtract + ".isValid', ConstantValue(1)),\n"
+            returnString += "\tAssign(\"" + headerToExtract + ".isValid\", ConstantValue(1)),\n"
             for field in header[1]:
-                returnString += "\tAssign('" + headerToExtract + "." + field.name + "', SymbolicValue()),\n"
+                returnString += "\tAssign(\"" + headerToExtract + "." + field.name + "\", SymbolicValue()),\n"
     return returnString[:-2]
+
+
+def mul_constant(const, node):
+    returnString = ""
+    value = formatATNode(node)
+    for i in range(const):
+        if i == const - 1:
+            returnString += ":+:(" +value + ", " + value +  ")"
+        else:
+            returnString += ":+:(" + value + ", "
+    for i in range(const - 1):
+        returnString += ")"
+    return returnString
 
 # ---- V1 specific ----
 
 def mark_to_drop():
-    return "val mark_to_drop = Fail('Packet dropped')\n"
+    return "val mark_to_drop = Fail(\"Packet dropped\")\n"
