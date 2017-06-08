@@ -696,7 +696,7 @@ def extract(node):
             if header[0] == getHeaderType(node.arguments.vec[0].expr.member):
                 hdr = headerToExtract.split(".")[1] #remove next keyword
                 for i in range(0, headerStackSize[hdr]):
-                    returnString += "\tIf(\"" + hdr + "Index\", :==:(ConstantValue(" + str(i) + ")),\n\t\tinstructionBlock(\n"
+                    returnString += "\tIf(Constrain(\"" + hdr + "Index\"), :==:(ConstantValue(" + str(i) + ")),\n\t\tinstructionBlock(\n"
                     returnString += "\t\t\tAssign(\"" + hdr +  "_" + str(i) + ".isValid" + "\", ConstantValue(1)),\n"
                     for field in header[1]:
                         returnString += "\t\t\tAssign(\"" + hdr + "_" + str(i) + "." + field.name + "\", SymbolicValue()),\n"
