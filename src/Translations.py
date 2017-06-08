@@ -258,6 +258,9 @@ def MethodCallExpression(node):
     elif hasattr(node.method, 'member') and node.method.member == "count":
          #ignore it
         pass
+    # count, TODO: separate this into an 'extern methods' method
+    elif hasattr(node.method, 'path') and node.method.path.name == "hash":
+         returnString += "Assign(\"" + toSEFL(node.arguments.vec[0]) + "\", SymbolicValue())"
     # extern method: Name it as extern for later processing
     elif hasattr(node.method, 'expr') and node.method.expr.type.Node_Type == "Type_Extern":
         returnString +=  "//Extern: " + toSEFL(node.method)
@@ -696,7 +699,7 @@ def extract(node):
             if header[0] == getHeaderType(node.arguments.vec[0].expr.member):
                 hdr = headerToExtract.split(".")[1] #remove next keyword
                 for i in range(0, headerStackSize[hdr]):
-                    returnString += "\tIf(Constrain(\"" + hdr + "Index\"), :==:(ConstantValue(" + str(i) + ")),\n\t\tinstructionBlock(\n"
+                    returnString += "\tIf(Constrain(\"" + hdr + "Index\", :==:(ConstantValue(" + str(i) + "))),\n\t\tInstructionBlock(\n"
                     returnString += "\t\t\tAssign(\"" + hdr +  "_" + str(i) + ".isValid" + "\", ConstantValue(1)),\n"
                     for field in header[1]:
                         returnString += "\t\t\tAssign(\"" + hdr + "_" + str(i) + "." + field.name + "\", SymbolicValue()),\n"
@@ -705,7 +708,7 @@ def extract(node):
                 returnString = returnString[:-2] 
                 for i in range(0, headerStackSize[hdr]):
                     returnString += ")"
-                returnString += ",\n\tAssign(\"" + hdr + "Index\", :+:(\"" + hdr + "Index\",ConstantValue(1))),\n"
+                returnString += ",\n\tAssign(\"" + hdr + "Index\", :+:(:@(\"" + hdr + "Index\"), ConstantValue(1))),\n"
         #regular header field
         elif header[0] == getHeaderType(node.arguments.vec[0].member):
             returnString += "\tAssign(\"" + headerToExtract + ".isValid\", ConstantValue(1)),\n"
