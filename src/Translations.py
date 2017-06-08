@@ -282,7 +282,7 @@ def NameMapProperty(node):
 
 def P4Action(node):
     actionIDs[node.name] = node.Node_ID
-    actionData = "Assign(\"action_run\", " + str(node.Node_ID) + "), \n\t"
+    actionData = "Assign(\"action_run\", ConstantValue(" + str(node.Node_ID) + ")), \n\t"
     for param in node.parameters.parameters.vec:
         if param.direction == "":
             actionData += "Assign(\"" + param.name + "\", SymbolicValue()),\n\t"
@@ -565,10 +565,10 @@ def ifStatement(node):
         returnString += "Deallocate(\"" + booleanStatement + "\")"
     else:
         if node.condition.Node_Type == 'PathExpression':
-            condition = formatATNode(node.condition) + ", :==:(ConstantValue(1))"
+            condition = "\"" + str(toSEFL(node.condition)) + "\", :==:(ConstantValue(1))"
         elif node.condition.Node_Type == 'LNot' and node.condition.expr.Node_Type == 'PathExpression':
-            condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
-            condition = formatATNode(node.condition.expr) + ", :==:(ConstantValue(0))"
+            condition = "\"" + str(toSEFL(node.condition.expr)) + "\", :==:(ConstantValue(0))"
+            condition = "\"" + str(toSEFL(node.condition.expr)) + "\", :==:(ConstantValue(0))"
         elif node.condition.Node_Type == 'MethodCallExpression' and node.condition.method.member == 'isValid':
              condition = "\""+ str(toSEFL(node.condition)) + "\", :==:(ConstantValue(1))"
         else:
@@ -633,6 +633,9 @@ def assign(node):
                        "Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(1)), Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(0)))"
     elif node.right.Node_Type == "Leq":
         returnString = "If(Constrain(\"" + str(toSEFL(node.right.left)) + "\", :<=:(" + formatATNode(node.right.right)  + ")), " + \
+                       "Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(1)), Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(0)))"
+    elif node.right.Node_Type == "Grt":
+        returnString = "If(Constrain(\"" + str(toSEFL(node.right.left)) + "\", :>:(" + formatATNode(node.right.right)  + ")), " + \
                        "Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(1)), Assign(\"" + str(toSEFL(node.left)) + "\", ConstantValue(0)))"
     else:
         returnString = "Assign(\"" + str(toSEFL(node.left)) + "\", " + formatATNode(node.right) + ")"
