@@ -10,6 +10,7 @@ typedef = {} #typedefName, typedefNode
 actionIDs = {} #actionName, nodeID
 tableIDs = {} #tableName, nodeID
 declarationTypes = {} #instanceName, instanceType
+processedBlocks = set() #blockId set
 
 def run(node):
     returnString = ""
@@ -60,14 +61,16 @@ def P4Control(node):
 
 def BlockStatement(node):
     blockName = "block" + str(node.Node_ID)
-    components = ""
-    for v in node.components.vec:
-        nodeString = toSEFL(v)
-        if nodeString != "":
-            components = components + "\t" + nodeString + ",\n"
-    components = components[:-2]
-    block = "val " + blockName + " = InstructionBlock(\n" + components + "\n)\n\n"
-    blocks.append(block)
+    if node.Node_ID not in processedBlocks:
+        processedBlocks.add(node.Node_ID)
+        components = ""
+        for v in node.components.vec:
+            nodeString = toSEFL(v)
+            if nodeString != "":
+                components = components + "\t" + nodeString + ",\n"
+        components = components[:-2]
+        block = "val " + blockName + " = InstructionBlock(\n" + components + "\n)\n\n"
+        blocks.append(block)
     return blockName
 
 def BAnd(node):
@@ -98,10 +101,12 @@ def Slice(node):
     return "<Slice>" + str(node.Node_ID)
 
 def Shl(node):
-    return "<Shl>" + str(node.Node_ID)
+    #return "<Shl>" + str(node.Node_ID)
+    return "SymbolicValue()" #TODO: proper model this operation
 
 def Shr(node):
-    return "<Shr>" + str(node.Node_ID)
+    #return "<Shr>" + str(node.Node_ID)
+    return "SymbolicValue()" #TODO: proper model this operation
 
 def Mul(node):
     returnString = ""
@@ -474,9 +479,10 @@ def Type_Header(node):
     return ""
 
 def P4Parser(node):
-    returnString = toSEFL(node.parserLocals)
-    returnString += toSEFL(node.states)
-    returnString += "val " + node.name + " = InstructionBlock(\n"
+    returnString = toSEFL(node.states)
+    returnString += "val " + node.name + " = InstructionBlock(\n\t"
+    for l in node.parserLocals.vec:
+        returnString += toSEFL(l) + ",\n\t"
     returnString += declareParameters(node)
     returnString += "\tstart\n)\n"
     return returnString 
