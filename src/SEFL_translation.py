@@ -42,21 +42,25 @@ def P4Program(node):
 def P4Control(node):
     returnString = "//Control\n"
     returnString += "val " + node.name + " = InstructionBlock(\n\t"
-    actionsAndTables = ""
+    actions = ""
+    tables = ""
     for local in node.controlLocals.vec:
         if local.Node_Type == "Declaration_Variable" or local.Node_Type == "Declaration_Instance":
             nodeString = toSEFL(local)
             if nodeString != "":
                 returnString += nodeString + ",\n\t"
-        else:
-            actionsAndTables += toSEFL(local) + "\n"
+        elif local.Node_Type == "P4Action":
+            actions += toSEFL(local) + "\n"
+        elif local.Node_Type == "P4Table":
+            tables += toSEFL(local) + "\n"
     #returnString += toSEFL(node.type.applyParams)
     for v in node.body.components.vec:
         returnString += toSEFL(v) + ",\n\t"
     if len(node.body.components.vec) > 0:
         returnString = returnString[:-3]
     returnString += "\n)\n\n"
-    returnString += actionsAndTables
+    returnString += actions
+    returnString += tables
     return returnString
 
 def BlockStatement(node):

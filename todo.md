@@ -1,21 +1,21 @@
 TODO:
 
-- execute_meter
+- annotations
 
-- casts
+- what happens if a table doesn't match at all?
 
-- <ConstructorCallExpression>13223
-
-- clone3
-
-- “underflow” or “overflow” wrap around
+-  forward reference extends over definition of value block429967
 
 - bitwise operations
+    - “underflow” or “overflow” wrap around
+    - Slice
+- casts
 
 ---------------------------------------------------------------------------------------------------
 
 OBS:
 
-- action_run is being forked, it is better to set a actionXRun variable 
-- can bitwise operations be modeled?
-- and/or would be useful
+- can bitwise operations be modeled? (they seem to be working on it)
+- boolean and/or would be useful
+- parse recursion:
+    - theoretically limited by the max packet size
