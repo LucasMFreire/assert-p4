@@ -37,18 +37,18 @@ def P4Program(node):
 
 def P4Control(node):
     returnString = "//Control\n"
-    returnString += "void " + node.name + "() {\n\t"
     actions = ""
     tables = ""
     for local in node.controlLocals.vec:
         if local.Node_Type == "Declaration_Variable" or local.Node_Type == "Declaration_Instance":
             nodeString = toC(local)
             if nodeString != "":
-                returnString += nodeString + "\n\t"
+                returnString += nodeString + "\n"
         elif local.Node_Type == "P4Action":
             actions += toC(local) + "\n"
         elif local.Node_Type == "P4Table":
             tables += toC(local) + "\n"
+    returnString += "\nvoid " + node.name + "() {\n\t"
     for v in node.body.components.vec:
         returnString += toC(v) + "\n\t"
     if len(node.body.components.vec) > 0:
@@ -94,12 +94,10 @@ def Slice(node):
     return "<Slice>" + str(node.Node_ID)
 
 def Shl(node):
-    #return "<Shl>" + str(node.Node_ID)
-    return "SymbolicValue()" #TODO: proper model this operation
+    return toC(node.left) + " << " +  toC(node.right)
 
 def Shr(node):
-    #return "<Shr>" + str(node.Node_ID)
-    return "SymbolicValue()" #TODO: proper model this operation
+    return toC(node.left) + " >> " +  toC(node.right)
 
 def Mul(node):
     return str(toC(node.left)) + " * " + str(toC(node.right))
@@ -162,15 +160,10 @@ def Declaration_Instance(node):
     return returnString        
     
 def Declaration_Variable(node):
-    if  node.type.Node_Type == 'Type_Name':
-        returnString = ""
-        for header in headers:
-            if header[0] == node.type.path.name:
-                returnString += "Allocate('validityBit_" + node.name + "\"),\n"
-                returnString += "validityBit_" + node.name + "= 0;\n"
-                for field in header[1]:
-                    returnString += "Allocate(\"" + field.name + "_" + node.name + "\"),"
-        return returnString
+    if node.type.Node_Type == "Type_Bits" or node.type.Node_Type == "Type_Boolean":
+        return "unsigned int " + node.name + ";"
+    elif node.type.Node_Type == "Type_Name":
+        return node.type.path.name + " " + node.name + ";"
     return allocate(node)
 
 def EmptyStatement(node):
@@ -339,28 +332,21 @@ def selectSingle(node, cases, exp):
     return returnString
 
 def selectMultiple(node, cases, exp):
-    #not the best solution. Multiple branches can occur. AND statement would be better.
-    returnString = "Allocate(\"selectedMultipleParam\"),\n\t"
-    returnString += "Assign(\"selectedMultipleParam\", ConstantValue(0)),\n\t"
+    returnString = ""
     for case in cases:
         if case.keyset.Node_Type == 'Mask':
             #todo: fix mask #bitop
             returnString = "//TODO: MASK\n"
         elif case.keyset.Node_Type == 'DefaultExpression':
-            returnString += "If(Constrain(\"selectedMultipleParam\", :==:(ConstantValue(0))),\n\t\t"
             returnString += "InstructionBlock(Assign(\"selectedMultipleParam\", ConstantValue(1)), " + case.state.path.name + ")),\n\t"
         elif case.keyset.Node_Type == "ListExpression":
-            returnString += "If(Constrain(\"selectedMultipleParam\", :==:(ConstantValue(0))), \n\t\t"
             for idx,e in enumerate(exp):
                 if case.keyset.components.vec[idx].Node_Type == "Mask":
-                    returnString += "//TODO: MASK\n"
+                    a = toC(case.keyset.components.vec[idx].left)
+                    b = toC(case.keyset.components.vec[idx].right)
+                    returnString += "if(" + str(e) + " & " + b + " == " + a + " & " + b + ") {\n\t\t" + case.state.path.name + "();\n\t}\n\t\t"
                 else:
-                    returnString += "If(Constrain(\"" + str(e) + "\", :==:(ConstantValue(" + str(case.keyset.components.vec[idx].value) + "))), \n\t\t"
-            returnString += "InstructionBlock(Assign(\"selectedMultipleParam\", ConstantValue(1)), " + case.state.path.name + "))"
-            for idx,e in enumerate(exp):
-                returnString += ")"
-            returnString += ",\n\t"
-    returnString += "Deallocate(\"selectedMultipleParam\")"
+                    returnString += "if(" + str(e) + " == " + str(case.keyset.components.vec[idx].value) + ") {} \n\t\t"
     return returnString
 
 def StringLiteral(node):
@@ -371,11 +357,15 @@ def StructField(node):
     #warning: two headers defined in different structs
     #with the same name but different types would break this
     #future solution: discriminate by struct name
-    if  node.type.Node_Type == "Type_Name":
+    if node.type.Node_Type == "Type_Name":
         structFieldsHeaderTypes[node.name] = node.type.path.name
-    elif  node.type.Node_Type == "Type_Stack":
+        returnString += "\t" + structFieldsHeaderTypes[node.name] + " " + node.name + ";"
+    elif node.type.Node_Type == "Type_Stack":
         structFieldsHeaderTypes[node.name] = node.type.elementType.path.name
         headerStackSize[node.name] = node.type.size.value
+        returnString += "\t" + structFieldsHeaderTypes[node.name] + " " + node.name + "[" + str(node.type.size.value) + "];"
+    elif node.type.Node_Type == "Type_Bits":
+        returnString += "\tunsigned int " + node.name + " : " + str(node.type.size) + ";"
     return returnString
 
 def SwitchCase(node):
@@ -431,8 +421,11 @@ def Type_Package(node):
     return "<Type_Package>" + str(node.Node_ID)
 
 def Type_Struct(node):
-    structs[node.name] = node.fields.vec 
-    return toC(node.fields)
+    structs[node.name] = node.fields.vec
+    returnString = "typedef struct {\n"
+    returnString += toC(node.fields)
+    returnString += "} " + node.name + ";\n"
+    return returnString
 
 def Type_Table(node):
     return toC(node.table)
@@ -461,18 +454,22 @@ def Type_Header(node):
     headerTuple = (node.name, fields)
     headers.append(headerTuple)
     ####
-    returnString = "struct " + node.name + "{\n"
+    returnString = "typedef struct {\n\tunsigned int isValid : 1;\n"
     for field in node.fields.vec:
-        returnString += "\t" + field.name + ";\n"
-    returnString += "}\n"
+        if field.type.Node_Type == "Type_Bits":
+            returnString += "\tunsigned int " + field.name + " : " + str(field.type.size) + ";\n"
+        else:
+            returnString += "\t??? " + field.name + ";\n"
+    returnString += "} " + node.name + ";\n"
     return returnString
 
 def P4Parser(node):
-    returnString = toC(node.states)
-    returnString += "void  " + node.name + "() {\n\t"
+    returnString = declareParameters(node)
     for l in node.parserLocals.vec:
-        returnString += toC(l) + "\n\t"
-    returnString += declareParameters(node)
+        returnString += toC(l) + "\n"
+    returnString += "\n" + toC(node.states)
+    returnString += "void " + node.name + "() {\n"
+    returnString += SymbolizeParameters(node)
     returnString += "\tstart();\n}\n"
     return returnString 
 
@@ -500,6 +497,18 @@ def ParserState(node):
 
 ########### HELPER FUNCTIONS ###########
 
+def SymbolizeParameters(node):
+    returnString = ""
+    for param in node.type.applyParams.parameters.vec:
+        if (param.direction == "out" or param.direction == "inout") and param.type.Node_Type == 'Parameter':
+            returnString += SymbolizeParameter(param.type)
+        if (param.direction == "out" or param.direction == "inout") and param.type.Node_Type == 'Type_Name':
+            returnString += SymbolizeParameter(param)
+    return returnString + "\n"
+
+def SymbolizeParameter(param):
+    return "\tklee_make_symbolic(&" + param.name + ", sizeof(" + param.name + "), \"" + param.name + "\");\n"
+
 def declareParameters(node):
     returnString = ""
     for param in node.type.applyParams.parameters.vec:
@@ -510,36 +519,7 @@ def declareParameters(node):
     return returnString + "\n"
 
 def declareParameter(param):
-    returnString = "\n\t//Allocate " + param.name + "\n"
-    for h in structs[param.type.path.name]:
-        if h.name in structFieldsHeaderTypes:
-            if h.name in headerStackSize:
-                returnString += "\tAllocate(\"" + h.name + "Index\"),\n"
-                returnString += "\t" + h.name + "Index = 0;\n"
-                for i in range(0, headerStackSize[h.name]):
-                    returnString += allocateHeader(param, h, i)
-            else:
-                returnString += allocateHeader(param, h)
-        else: # struct field is not a header
-            returnString += "\tAllocate(\"" + param.name + "." + h.name + "\"),\n"
-            returnString += "\t" + param.name + "." + h.name + " = SymbolicValue();\n"
-    return returnString
-
-def allocateHeader(param, h, stackIndex = -1):
-    returnString = ""
-    index = ""
-    if stackIndex != -1:
-        index = "_" + str(stackIndex)
-    for header in headers:
-        if header[0] == getHeaderType(h.name):
-            returnString += "\tAllocate(\"" + param.name + "." + h.name + index + ".isValid\"),\n"
-            returnString += "\t" + param.name + "." + h.name + index + ".isValid = 0;\n"
-            for field in header[1]:
-                returnString += "\tAllocate(\"" + param.name + "." + h.name + index +  "." + field.name + "\"),\n"
-    if getHeaderType(h.name) in structs:
-        for field in structs[getHeaderType(h.name)]:
-            returnString += "\tAllocate(\"" + param.name + "." + h.name + index + "." + field.name + "\"),\n"
-    return returnString
+    return param.type.path.name + " " + param.name + ";\n"
 
 def ifStatement(node):
     condition = ""
@@ -605,49 +585,7 @@ def emit(node):
 
 def extract(node):
     headerToExtract = toC(node.arguments.vec[0])
-    returnString = "//Extract " + headerToExtract + "\n"
-    for header in headers:
-        # header stack position
-        if node.arguments.vec[0].Node_Type == "ArrayIndex":
-            if header[0] == getHeaderType(node.arguments.vec[0].left.member):
-                headerToExtract = node.arguments.vec[0].left.expr.path.name
-                returnString += "\tAssign(\"" + headerToExtract + ".isValid\", ConstantValue(1)),\n"
-                for field in header[1]:
-                    returnString += "\tAssign(\"" + headerToExtract + "." + "_" + str(node.arguments.vec[0].right.value) + field.name + "\", SymbolicValue()),\n"
-        # next header stack element
-        elif node.arguments.vec[0].member == "next":
-            if header[0] == getHeaderType(node.arguments.vec[0].expr.member):
-                hdr = headerToExtract.split(".")[1] #remove next keyword
-                for i in range(0, headerStackSize[hdr]):
-                    returnString += "\tIf(Constrain(\"" + hdr + "Index\", :==:(ConstantValue(" + str(i) + "))),\n\t\tInstructionBlock(\n"
-                    returnString += "\t\t\tAssign(\"" + hdr +  "_" + str(i) + ".isValid" + "\", ConstantValue(1)),\n"
-                    for field in header[1]:
-                        returnString += "\t\t\tAssign(\"" + hdr + "_" + str(i) + "." + field.name + "\", SymbolicValue()),\n"
-                    returnString = returnString[:-2]
-                    returnString += "),\n"  
-                returnString = returnString[:-2] 
-                for i in range(0, headerStackSize[hdr]):
-                    returnString += ")"
-                returnString += ",\n\tAssign(\"" + hdr + "Index\", :+:(:@(\"" + hdr + "Index\"), ConstantValue(1))),\n"
-        #regular header field
-        elif header[0] == getHeaderType(node.arguments.vec[0].member):
-            returnString += "\tAssign(\"" + headerToExtract + ".isValid\", ConstantValue(1)),\n"
-            for field in header[1]:
-                returnString += "\tAssign(\"" + headerToExtract + "." + field.name + "\", SymbolicValue()),\n"
-    return returnString[:-2]
-
-
-def mul_constant(const, node):
-    returnString = ""
-    value = formatATNode(node)
-    for i in range(const):
-        if i == const - 1:
-            returnString += ":+:(" +value + ", " + value +  ")"
-        else:
-            returnString += ":+:(" + value + ", "
-    for i in range(const - 1):
-        returnString += ")"
-    return returnString
+    return headerToExtract + ".isValid = 1"
 
 # ---- V1 specific ----
 
