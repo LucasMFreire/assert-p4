@@ -79,7 +79,7 @@ def Cast(node):
     return cast(node.expr, node.destType)
 
 def Geq(node):
-    return "<Geq>" + str(node.Node_ID)
+    return toC(node.left) + " >= " +  toC(node.right)
 
 def Leq(node):
     return "<Leq>" + str(node.Node_ID)
