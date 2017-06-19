@@ -11,7 +11,7 @@ tableIDs = {} #tableName, nodeID
 declarationTypes = {} #instanceName, instanceType
 
 def run(node):
-    returnString = ""
+    returnString = "#include<stdio.h>\n#include<stdint.h>\n"
     program = toC(node)
     returnString += program 
     return returnString
