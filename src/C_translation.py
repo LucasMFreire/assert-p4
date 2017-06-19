@@ -338,12 +338,7 @@ def selectSingle(node, cases, exp):
 def selectMultiple(node, cases, exp):
     returnString = ""
     for case in cases:
-        if case.keyset.Node_Type == 'Mask':
-            #todo: fix mask #bitop
-            returnString += "//TODO: MASK\n"
-        elif case.keyset.Node_Type == 'DefaultExpression':
-            returnString += "InstructionBlock(Assign(\"selectedMultipleParam\", ConstantValue(1)), " + case.state.path.name + ")),\n\t"
-        elif case.keyset.Node_Type == "ListExpression":
+        if case.keyset.Node_Type == "ListExpression":
             fullExpression = ""
             for idx,e in enumerate(exp):
                 if case.keyset.components.vec[idx].Node_Type == "Mask":
@@ -352,8 +347,10 @@ def selectMultiple(node, cases, exp):
                     fullExpression += "((" + str(e) + " & " + b + ") == (" + a + " & " + b + ")) && "
                 else:
                     fullExpression += "(" + str(e) + " == " + str(case.keyset.components.vec[idx].value) + ") && "
-            returnString += "if(" + fullExpression[:-4] + ") {\n\t\t" + case.state.path.name + "();\n\t}\n\t\t"
-    return returnString
+            returnString += "if(" + fullExpression[:-4] + ") {\n\t\t" + case.state.path.name + "();\n\t} else "
+        else:
+            returnString += "select with multiple parameters: unknown node type"
+    return returnString[:-6]
 
 def StringLiteral(node):
     return "<StringLiteral>" + str(node.Node_ID)
