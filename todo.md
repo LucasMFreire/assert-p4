@@ -26,6 +26,7 @@ OBS:
 
 TODO: C
 
+- packet.lookahead, SymbolicValue(), ; , Fork, emit, //Extern: ipv4_checksum.get
 - bit fields max size is 64 because of c data types
     -  alternative is using a bitarray library
         - would Klee work properly with it?
