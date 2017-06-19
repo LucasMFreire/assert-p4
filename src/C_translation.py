@@ -76,7 +76,7 @@ def BXor(node):
     return "<BXor>" + str(node.Node_ID)
 
 def Cast(node):
-    return "<Cast>" + str(node.Node_ID)
+    return cast(node.expr, node.destType)
 
 def Geq(node):
     return "<Geq>" + str(node.Node_ID)
@@ -160,8 +160,10 @@ def Declaration_Instance(node):
     return returnString        
     
 def Declaration_Variable(node):
-    if node.type.Node_Type == "Type_Bits" or node.type.Node_Type == "Type_Boolean":
-        return "unsigned int " + node.name + ";"
+    if node.type.Node_Type == "Type_Bits":
+        return bitsSizeToType(node.type.size) + " " + node.name + ";"
+    elif node.type.Node_Type == "Type_Boolean":
+        return "uint8_t " + node.name + ";"
     elif node.type.Node_Type == "Type_Name":
         return node.type.path.name + " " + node.name + ";"
     return allocate(node)
@@ -303,11 +305,13 @@ def SelectExpression(node):
         if expression.Node_Type == 'Slice':
             #TODO: slice bit string currently not supported #bitop
             return ""
-        if expression.Node_Type == 'Member':
+        elif expression.Node_Type == 'Member':
             exp.append(toC(expression.expr) + "." + expression.member)
-        if  expression.Node_Type == "MethodCallStatement":
+        elif  expression.Node_Type == "MethodCallStatement":
             if expression.method.member == "isValid":
-                exp.append("validityBit_" + expression.method.expr.path.name)
+                exp.append(expression.method.expr.path.name + ".isValid")
+        elif expression.Node_Type == 'Cast':
+            exp.append(cast(expression.expr, expression.destType))
 
     cases = node.selectCases.vec
     returnString = ""
@@ -336,17 +340,19 @@ def selectMultiple(node, cases, exp):
     for case in cases:
         if case.keyset.Node_Type == 'Mask':
             #todo: fix mask #bitop
-            returnString = "//TODO: MASK\n"
+            returnString += "//TODO: MASK\n"
         elif case.keyset.Node_Type == 'DefaultExpression':
             returnString += "InstructionBlock(Assign(\"selectedMultipleParam\", ConstantValue(1)), " + case.state.path.name + ")),\n\t"
         elif case.keyset.Node_Type == "ListExpression":
+            fullExpression = ""
             for idx,e in enumerate(exp):
                 if case.keyset.components.vec[idx].Node_Type == "Mask":
                     a = toC(case.keyset.components.vec[idx].left)
                     b = toC(case.keyset.components.vec[idx].right)
-                    returnString += "if(" + str(e) + " & " + b + " == " + a + " & " + b + ") {\n\t\t" + case.state.path.name + "();\n\t}\n\t\t"
+                    fullExpression += "((" + str(e) + " & " + b + ") == (" + a + " & " + b + ")) && "
                 else:
-                    returnString += "if(" + str(e) + " == " + str(case.keyset.components.vec[idx].value) + ") {} \n\t\t"
+                    fullExpression += "(" + str(e) + " == " + str(case.keyset.components.vec[idx].value) + ") && "
+            returnString += "if(" + fullExpression[:-4] + ") {\n\t\t" + case.state.path.name + "();\n\t}\n\t\t"
     return returnString
 
 def StringLiteral(node):
@@ -365,7 +371,7 @@ def StructField(node):
         headerStackSize[node.name] = node.type.size.value
         returnString += "\t" + structFieldsHeaderTypes[node.name] + " " + node.name + "[" + str(node.type.size.value) + "];"
     elif node.type.Node_Type == "Type_Bits":
-        returnString += "\tunsigned int " + node.name + " : " + str(node.type.size) + ";"
+        returnString += "\t" + bitsSizeToType(node.type.size) + " " + node.name + " : " + str(node.type.size) + ";"
     return returnString
 
 def SwitchCase(node):
@@ -454,10 +460,10 @@ def Type_Header(node):
     headerTuple = (node.name, fields)
     headers.append(headerTuple)
     ####
-    returnString = "typedef struct {\n\tunsigned int isValid : 1;\n"
+    returnString = "typedef struct {\n\tuint8_t isValid : 1;\n"
     for field in node.fields.vec:
         if field.type.Node_Type == "Type_Bits":
-            returnString += "\tunsigned int " + field.name + " : " + str(field.type.size) + ";\n"
+            returnString += "\t" + bitsSizeToType(field.type.size) + " " + field.name + " : " + str(field.type.size) + ";\n"
         else:
             returnString += "\t??? " + field.name + ";\n"
     returnString += "} " + node.name + ";\n"
@@ -587,7 +593,24 @@ def extract(node):
     headerToExtract = toC(node.arguments.vec[0])
     return headerToExtract + ".isValid = 1"
 
+def cast(expr, toType):
+    returnString = ""
+    if toType.Node_Type == "Type_Bits":
+        returnString += "(" + bitsSizeToType(toType.size) + ") "
+    return returnString + toC(expr)
+
+def bitsSizeToType(size):
+    if size <= 8:
+        return "uint8_t"
+    elif size <= 32:
+        return "uint32_t"
+    elif size <= 64:
+        return "uint64_t"
+    else:
+        return "???"
+
 # ---- V1 specific ----
 
 def mark_to_drop():
     return "void mark_to_drop() {\n\tprintf(\"Packet dropped\\n\");\n\texit(0);\n}\n"
+

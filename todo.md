@@ -1,4 +1,4 @@
-TODO:
+TODO: SEFL
 
 - annotations
 
@@ -19,3 +19,17 @@ OBS:
 - boolean and/or would be useful
 - parse recursion:
     - theoretically limited by the max packet size
+
+
+---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+
+TODO: C
+
+- bit fields max size is 64 because of c data types
+    -  alternative is using a bitarray library
+        - would Klee work properly with it?
+- local variables are not inside a bitvector struct
+    - potential source of errors because of overflows
+    - solution: put them in a struct named after control
+        - can also solve some encapsulation problems
