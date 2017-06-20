@@ -104,15 +104,22 @@ def Mul(node):
 
 def ActionList(node):
     #assuming every action will be forked
-    returnString = "\tFork("
-    for action in node.actionList.vec:
+    returnString = "\tint symbol;\n" + klee_make_symbolic("symbol")
+    returnString += "\tswitch(symbol) {\n"
+    for idx,action in enumerate(node.actionList.vec):
+        if idx == len(node.actionList.vec) - 1:
+            returnString += "\t\tdefault: "
+        else:
+            returnString += "\t\tcase " + str(idx) + ": "
         if action.expression.Node_Type == "PathExpression":
-            returnString += action.expression.path.name + "_" + str(actionIDs[action.expression.path.name]) + ", "
+            returnString += action.expression.path.name + "_" + str(actionIDs[action.expression.path.name]) + "(); "
         elif action.expression.Node_Type == "MethodCallExpression":
-            returnString += action.expression.method.path.name + "_" + str(actionIDs[action.expression.method.path.name]) + ", "
+            returnString += action.expression.method.path.name + "_" + str(actionIDs[action.expression.method.path.name]) + "(); "
         else:
             returnString += "ERROR:UNKNOWN ACTION LIST TYPE"
-    return returnString[:-2] + ")"
+        returnString += "break;\n"
+    returnString += "\t}"
+    return returnString
 
 def ActionListElement(node):
     return "<ActionListElement>" + str(node.Node_ID) 
@@ -135,7 +142,7 @@ def ArrayIndex(node):
 def AssignmentStatement(node):
     if isExternal(node.right):
         symValue = toC(node.left)
-        return "klee_make_symbolic(&" + symValue + ", sizeof(" + symValue + "), \"" + symValue + "\");"
+        return klee_make_symbolic(symValue)
     return assign(node)
 
 def BoolLiteral(node):
@@ -226,10 +233,10 @@ def MethodCallExpression(node):
         returnString += emit(node)
      # execute meter, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'member') and node.method.member == "execute_meter":
-        returnString += toC(node.arguments.vec[1]) + " = SymbolicValue();"
+        returnString += klee_make_symbolic(toC(node.arguments.vec[1]))
     # read register, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'member') and node.method.member == "read":
-        returnString += toC(node.arguments.vec[0]) + " = SymbolicValue();"
+        returnString += klee_make_symbolic(toC(node.arguments.vec[0]))
     # write register, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'member') and node.method.member == "write":
         #ignore it
@@ -244,7 +251,7 @@ def MethodCallExpression(node):
         pass
     # count, TODO: separate this into an 'extern methods' method
     elif hasattr(node.method, 'path') and node.method.path.name == "hash":
-         returnString += toC(node.arguments.vec[0]) + " = SymbolicValue();"
+         returnString += klee_make_symbolic(toC(node.arguments.vec[0]))
     # extern method: Name it as extern for later processing
     elif hasattr(node.method, 'expr') and node.method.expr.type.Node_Type == "Type_Extern":
         returnString +=  "//Extern: " + toC(node.method)
@@ -272,7 +279,7 @@ def P4Action(node):
     actionData = "action_run = " + str(node.Node_ID) + ";\n\t"
     for param in node.parameters.parameters.vec:
         if param.direction == "":
-            actionData += param.name + " = SymbolicValue();\n\t"
+            actionData += klee_make_symbolic(param.name)
     return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n\t" + actionData + toC(node.body) + "\n}\n\n"
 
 def P4Table(node):
@@ -509,13 +516,10 @@ def SymbolizeParameters(node):
     returnString = ""
     for param in node.type.applyParams.parameters.vec:
         if (param.direction == "out" or param.direction == "inout") and param.type.Node_Type == 'Parameter':
-            returnString += SymbolizeParameter(param.type)
+            returnString += klee_make_symbolic(param.type.name)
         if (param.direction == "out" or param.direction == "inout") and param.type.Node_Type == 'Type_Name':
-            returnString += SymbolizeParameter(param)
+            returnString += klee_make_symbolic(param.name)
     return returnString + "\n"
-
-def SymbolizeParameter(param):
-    return "\tklee_make_symbolic(&" + param.name + ", sizeof(" + param.name + "), \"" + param.name + "\");\n"
 
 def declareParameters(node):
     returnString = ""
@@ -554,12 +558,10 @@ def allocate(node):
 def assign(node):
     return str(toC(node.left)) + " = " + str(toC(node.right)) + ";"
 
-def formatATNode(node): # :@
+def formatATNode(node):
     value = ""
     if node.Node_Type == 'Cast':
         value = formatATNode(node.expr)
-    elif isExternal(node):
-        value = "SymbolicValue()"
     else:
         value = str(toC(node))
     return value
@@ -610,6 +612,9 @@ def bitsSizeToType(size):
         return "uint64_t"
     else:
         return "???"
+
+def klee_make_symbolic(var):
+    return "\tklee_make_symbolic(&" + var + ", sizeof(" + var + "), \"" + var + "\");\n"
 
 # ---- V1 specific ----
 
