@@ -377,6 +377,7 @@ def StructField(node):
     elif node.type.Node_Type == "Type_Stack":
         structFieldsHeaderTypes[node.name] = node.type.elementType.path.name
         headerStackSize[node.name] = node.type.size.value
+        returnString += "\tint " + node.name + "_index;\n"
         returnString += "\t" + structFieldsHeaderTypes[node.name] + " " + node.name + "[" + str(node.type.size.value) + "];"
     elif node.type.Node_Type == "Type_Bits":
         returnString += "\t" + bitsSizeToType(node.type.size) + " " + node.name + " : " + str(node.type.size) + ";"
@@ -587,14 +588,27 @@ def emit(node):
         if header[0] == getHeaderType(headerName):
             for field in header[1]:
                 size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
-                returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "." + field.name + ": \", " + hdrName + "." + field.name + ");\n\t"
-                global emitPosition
-                emitPosition += size
+                if hdrName.split(".")[1] in headerStackSize.keys():
+                    for idx in range(headerStackSize[hdrName.split(".")[1]]):
+                        returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "["+ str(idx) + "]." + field.name + ": \", " + hdrName + "[" + str(idx) + "]." + field.name + ");\n\t"
+                        global emitPosition
+                        emitPosition += size
+                else:
+                    returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "." + field.name + ": \", " + hdrName + "." + field.name + ");\n\t"
+                    global emitPosition
+                    emitPosition += size
     return returnString
 
 def extract(node):
+    returnString = ""
     headerToExtract = toC(node.arguments.vec[0])
-    return headerToExtract + ".isValid = 1;"
+    if headerToExtract.endswith(".next"): # parsing a header stack
+        headerToExtract = headerToExtract[:-5]
+        returnString += headerToExtract + "[" + headerToExtract + "_index]" + ".isValid = 1;\n\t"
+        returnString += headerToExtract + "_index++;"
+    else: 
+        returnString += headerToExtract + ".isValid = 1;"
+    return returnString
 
 def cast(expr, toType):
     returnString = ""
