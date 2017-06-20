@@ -279,6 +279,7 @@ def P4Action(node):
     actionData = "action_run = " + str(node.Node_ID) + ";\n\t"
     for param in node.parameters.parameters.vec:
         if param.direction == "":
+            actionData += bitsSizeToType(param.type.size) + " " + param.name + ";\n"
             actionData += klee_make_symbolic(param.name)
     return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n\t" + actionData + toC(node.body) + "\n}\n\n"
 
@@ -585,13 +586,11 @@ def emit(node):
     for header in headers:
         if header[0] == getHeaderType(headerName):
             for field in header[1]:
-                returnString += "CreateTag(\"" + hdrName + "." + field.name + "\", " + str(emitPosition) + "),\n\t"
                 size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
-                returnString += "Allocate(Tag(\"" + hdrName + "." + field.name + "\"), " + str(size) + "),\n\t"
-                returnString += "Assign(Tag(\"" + hdrName + "." + field.name + "\"), :@(\"" + hdrName + "." + field.name + "\")),\n\t"
+                returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "." + field.name + ": \", " + hdrName + "." + field.name + ");\n\t"
                 global emitPosition
                 emitPosition += size
-    return returnString[:-3]
+    return returnString
 
 def extract(node):
     headerToExtract = toC(node.arguments.vec[0])
