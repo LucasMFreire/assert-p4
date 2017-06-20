@@ -133,6 +133,9 @@ def ArrayIndex(node):
     return toC(node.left) + "_" + str(node.right.value)
 
 def AssignmentStatement(node):
+    if isExternal(node.right):
+        symValue = toC(node.left)
+        return "klee_make_symbolic(&" + symValue + ", sizeof(" + symValue + "), \"" + symValue + "\");"
     return assign(node)
 
 def BoolLiteral(node):
@@ -485,10 +488,12 @@ def Type_Parser(node):
 def ParserState(node):
     components = ""
     for v in node.components.vec:
-        components = components + "\t" + toC(v) + ",\n"
+        components = components + "\t" + toC(v) + "\n"
     expression = ""
     if hasattr(node, 'selectExpression'):
-        expression = toC(node.selectExpression)
+        expression += toC(node.selectExpression)
+        if "\n" not in expression:
+            expression += "();" #it is not a select, thus it is a direct parser state transition
     if node.name == "reject":
         expression += "printf(\"Packet dropped\");\n\texit(0);"
     parser = "void " + node.name + "() {\n" + components + "\t" + expression + "\n}\n\n"
@@ -547,7 +552,7 @@ def allocate(node):
     return "Allocate(\"" + node.name + "\")"
 
 def assign(node):
-    return str(toC(node.left)) + " = " + str(toC(node.right))
+    return str(toC(node.left)) + " = " + str(toC(node.right)) + ";"
 
 def formatATNode(node): # :@
     value = ""
@@ -588,7 +593,7 @@ def emit(node):
 
 def extract(node):
     headerToExtract = toC(node.arguments.vec[0])
-    return headerToExtract + ".isValid = 1"
+    return headerToExtract + ".isValid = 1;"
 
 def cast(expr, toType):
     returnString = ""
