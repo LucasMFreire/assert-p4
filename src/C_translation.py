@@ -9,6 +9,7 @@ typedef = {} #typedefName, typedefNode
 actionIDs = {} #actionName, nodeID
 tableIDs = {} #tableName, nodeID
 declarationTypes = {} #instanceName, instanceType
+package = ""
 
 def run(node):
     returnString = "#include<stdio.h>\n#include<stdint.h>\n"
@@ -160,11 +161,17 @@ def ConstructorCallExpression(node):
 def Declaration_Instance(node):
     returnString = ""
     if node.name == "main":
-        parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
-        ingress = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
-        egress = node.arguments.vec[3].type.path.name if hasattr(node.arguments.vec[3].type, "path") else node.arguments.vec[3].type.name
-        deparser = node.arguments.vec[5].type.path.name if hasattr(node.arguments.vec[5].type, "path") else node.arguments.vec[5].type.name
-        returnString += "int main() {\n\t" +  parser + "();\n\tint action_run;\n\t" + ingress + "();\n\t" + egress + "();\n\t" + deparser +  "();\n\treturn 0;\n}\n"
+        if package == "V1Switch":
+            parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
+            ingress = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
+            egress = node.arguments.vec[3].type.path.name if hasattr(node.arguments.vec[3].type, "path") else node.arguments.vec[3].type.name
+            deparser = node.arguments.vec[5].type.path.name if hasattr(node.arguments.vec[5].type, "path") else node.arguments.vec[5].type.name
+            returnString += "int main() {\n\t" +  parser + "();\n\tint action_run;\n\t" + ingress + "();\n\t" + egress + "();\n\t" + deparser +  "();\n\treturn 0;\n}\n"
+        elif package == "VSS":
+            parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
+            ingress = node.arguments.vec[1].type.path.name if hasattr(node.arguments.vec[1].type, "path") else node.arguments.vec[1].type.name
+            deparser = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
+            returnString += "int main() {\n\t" +  parser + "();\n\tint action_run;\n\t" + ingress + "();\n\t" + deparser + "();\n\treturn 0;\n}\n"
     elif hasattr(node.type, "path"):
         declarationTypes[node.name] = node.type.path.name
     return returnString        
@@ -257,7 +264,7 @@ def MethodCallExpression(node):
         returnString +=  "//Extern: " + toC(node.method)
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
-        returnString += "If(Constrain(\"" + node.arguments.vec[0].path.name + "\", :==:(ConstantValue(0))), Fail(\"" + node.arguments.vec[1].member + "\")"
+        returnString += "If(" + node.arguments.vec[0].path.name + " == 0) { printf(\"" + node.arguments.vec[1].member + "\"); exit(1); }"
      #SetValid method
     elif hasattr(node.method, 'member') and node.method.member == "setValid":
         returnString += toC(node.method.expr) + ".isValid = 1;"
@@ -279,7 +286,8 @@ def P4Action(node):
     actionData = "action_run = " + str(node.Node_ID) + ";\n\t"
     for param in node.parameters.parameters.vec:
         if param.direction == "":
-            actionData += bitsSizeToType(param.type.size) + " " + param.name + ";\n"
+            if param.type.Node_Type == "Type_Bits":
+                actionData += bitsSizeToType(param.type.size) + " " + param.name + ";\n"
             actionData += klee_make_symbolic(param.name)
     return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n\t" + actionData + toC(node.body) + "\n}\n\n"
 
@@ -430,10 +438,15 @@ def Type_Method(node):
     return "<Type_Method>" + str(node.Node_ID)
 
 def Type_Name(node):
-    return "<Type_Name>" + str(node.Node_ID)
+    return toC(node.path)
+
+def TypeNameExpression(node):
+    return "<TypeNameExpression>" + str(node.Node_ID)
 
 def Type_Package(node):
-    return "<Type_Package>" + str(node.Node_ID)
+    global package
+    package = node.name
+    return ""
 
 def Type_Struct(node):
     structs[node.name] = node.fields.vec
@@ -447,7 +460,7 @@ def Type_Table(node):
 
 def Type_Typedef(node):
     typedef[node.name] = node
-    return ""
+    return "typedef " + bitsSizeToType(node.type.size) + " " + node.name + ";\n"
     
 def Type_Unknown(node):
     return "<Type_Unknown>" + str(node.Node_ID)
@@ -474,7 +487,8 @@ def Type_Header(node):
         if field.type.Node_Type == "Type_Bits":
             returnString += "\t" + bitsSizeToType(field.type.size) + " " + field.name + " : " + str(field.type.size) + ";\n"
         else:
-            returnString += "\t??? " + field.name + ";\n"
+            typeName = toC(field.type)
+            returnString += "\t" + typeName + " " + field.name + ": " + str(typedef[typeName].type.size) + ";\n"
     returnString += "} " + node.name + ";\n"
     return returnString
 
