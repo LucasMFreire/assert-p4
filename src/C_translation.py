@@ -147,7 +147,7 @@ def AssignmentStatement(node):
     return assign(node)
 
 def BoolLiteral(node):
-    if node.value == "true":
+    if node.value == True:
         return "1"
     else:
         return "0"
@@ -264,7 +264,7 @@ def MethodCallExpression(node):
         returnString +=  "//Extern: " + toC(node.method)
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
-        returnString += "If(" + node.arguments.vec[0].path.name + " == 0) { printf(\"" + node.arguments.vec[1].member + "\"); exit(1); }"
+        returnString += "if(" + node.arguments.vec[0].path.name + " == 0) { printf(\"" + node.arguments.vec[1].member + "\"); exit(1); }"
      #SetValid method
     elif hasattr(node.method, 'member') and node.method.member == "setValid":
         returnString += toC(node.method.expr) + ".isValid = 1;"
@@ -288,6 +288,8 @@ def P4Action(node):
         if param.direction == "":
             if param.type.Node_Type == "Type_Bits":
                 actionData += bitsSizeToType(param.type.size) + " " + param.name + ";\n"
+            else:
+                actionData += toC(param.type) + " " + param.name + ";\n"
             actionData += klee_make_symbolic(param.name)
     return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n\t" + actionData + toC(node.body) + "\n}\n\n"
 

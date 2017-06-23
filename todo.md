@@ -1,3 +1,9 @@
+TODO: BOTH
+
+- implied reject state
+    - default at select expressions
+    - if no transition them call explicitly
+
 TODO: SEFL
 
 - annotations
@@ -11,7 +17,6 @@ TODO: SEFL
     - Slice
 - casts
 
----------------------------------------------------------------------------------------------------
 
 OBS:
 
@@ -22,11 +27,15 @@ OBS:
 
 
 ---------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------
 
 TODO: C
 
-- packet.lookahead, SymbolicValue(), ; , Fork, emit, //Extern: ipv4_checksum.get
+
+- header stack index initialization, forward declarations
+- emit
+    - idea 1: print: fieldName: value : size 
+        - advantages: can be parseable at the end of execution and processed
+    - what happens if we emit invalid headers?
 - bit fields max size is 64 because of c data types
     -  alternative is using a bitarray library
         - would Klee work properly with it?

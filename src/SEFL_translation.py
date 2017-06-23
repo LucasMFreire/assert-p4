@@ -156,7 +156,7 @@ def AssignmentStatement(node):
     return assign(node)
 
 def BoolLiteral(node):
-    if node.value == "true":
+    if node.value == True:
         return "ConstantValue(1)"
     else:
         return "ConstantValue(0)"
