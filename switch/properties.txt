@@ -1,5 +1,0 @@
-If(ipsg_check_fail == TRUE, dropPacket) #security
-
-
-after "hdr.int_X_header.setValid()" for every instance of X
-    emitHeader(int_X_header)

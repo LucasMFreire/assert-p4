@@ -30,8 +30,8 @@ OBS:
 
 TODO: C
 
-
-- header stack index initialization, forward declarations
+- VSS architecture: outctrl, inout headers
+- header stack index initialization, forward declarations,
 - emit
     - idea 1: print: fieldName: value : size 
         - advantages: can be parseable at the end of execution and processed
