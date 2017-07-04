@@ -333,6 +333,8 @@ def SelectExpression(node):
                 exp.append(expression.method.expr.path.name + ".isValid")
         elif expression.Node_Type == 'Cast':
             exp.append(cast(expression.expr, expression.destType))
+        elif expression.Node_Type == 'PathExpression':
+             exp.append(toC(expression.path))
 
     cases = node.selectCases.vec
     returnString = ""
