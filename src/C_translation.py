@@ -9,12 +9,15 @@ typedef = {} #typedefName, typedefNode
 actionIDs = {} #actionName, nodeID
 tableIDs = {} #tableName, nodeID
 declarationTypes = {} #instanceName, instanceType
+forwardDeclarations = set()
 package = ""
 
 def run(node):
-    returnString = "#include<stdio.h>\n#include<stdint.h>\n"
+    returnString = "#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint action_run;\n\n"
     program = toC(node)
-    returnString += program 
+    for declaration in forwardDeclarations:
+        returnString += "void " + declaration + "();\n"
+    returnString += "\n" + program 
     return returnString
     
 
@@ -68,13 +71,16 @@ def BlockStatement(node):
     return returnString
 
 def BAnd(node):
-    return "<BOr>" + str(node.Node_ID)
+    #return "<BAnd>" + str(node.Node_ID)
+    return ""
 
 def BOr(node):
-    return "<BOr>" + str(node.Node_ID)
+    #return "<BOr>" + str(node.Node_ID)
+    return ""
 
 def BXor(node):
-    return "<BXor>" + str(node.Node_ID)
+    #return "<BXor>" + str(node.Node_ID)
+    return ""
 
 def Cast(node):
     return cast(node.expr, node.destType)
@@ -83,16 +89,20 @@ def Geq(node):
     return toC(node.left) + " >= " +  toC(node.right)
 
 def Leq(node):
-    return "<Leq>" + str(node.Node_ID)
+    #return "<Leq>" + str(node.Node_ID)
+    return ""
 
 def LAnd(node):
-    return "<LAnd>" + str(node.Node_ID)
+    #return "<LAnd>" + str(node.Node_ID)
+    return ""
 
 def LOr(node):
-    return "<LOr>" + str(node.Node_ID)
+    #return "<LOr>" + str(node.Node_ID)
+    return ""
 
 def Slice(node):
-    return "<Slice>" + str(node.Node_ID)
+    #return "<Slice>" + str(node.Node_ID)
+    return ""
 
 def Shl(node):
     return toC(node.left) + " << " +  toC(node.right)
@@ -123,7 +133,8 @@ def ActionList(node):
     return returnString
 
 def ActionListElement(node):
-    return "<ActionListElement>" + str(node.Node_ID) 
+    #return "<ActionListElement>" + str(node.Node_ID) 
+    return ""
 
 def Add(node):
     return add(node)
@@ -132,10 +143,12 @@ def Sub(node):
     return sub(node)
 
 def Annotation(node):
-    return "<Annotation>" + str(node.Node_ID) 
+    #return "<Annotation>" + str(node.Node_ID) 
+    return ""
 
 def Annotations(node):
-    return "<Annotations>" + str(node.Node_ID) 
+    #return "<Annotations>" + str(node.Node_ID) 
+    return ""
 
 def ArrayIndex(node):
     return toC(node.left) + "_" + str(node.right.value)
@@ -156,7 +169,8 @@ def Constant(node):
     return str(node.value)
 
 def ConstructorCallExpression(node):
-    return "<ConstructorCallExpression>" + str(node.Node_ID) 
+    #return "<ConstructorCallExpression>" + str(node.Node_ID)
+    return "" 
 
 def Declaration_Instance(node):
     returnString = ""
@@ -166,12 +180,12 @@ def Declaration_Instance(node):
             ingress = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
             egress = node.arguments.vec[3].type.path.name if hasattr(node.arguments.vec[3].type, "path") else node.arguments.vec[3].type.name
             deparser = node.arguments.vec[5].type.path.name if hasattr(node.arguments.vec[5].type, "path") else node.arguments.vec[5].type.name
-            returnString += "int main() {\n\t" +  parser + "();\n\tint action_run;\n\t" + ingress + "();\n\t" + egress + "();\n\t" + deparser +  "();\n\treturn 0;\n}\n"
+            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + egress + "();\n\t" + deparser +  "();\n\treturn 0;\n}\n"
         elif package == "VSS":
             parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
             ingress = node.arguments.vec[1].type.path.name if hasattr(node.arguments.vec[1].type, "path") else node.arguments.vec[1].type.name
             deparser = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
-            returnString += "int main() {\n\t" +  parser + "();\n\tint action_run;\n\t" + ingress + "();\n\t" + deparser + "();\n\treturn 0;\n}\n"
+            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + deparser + "();\n\treturn 0;\n}\n"
     elif hasattr(node.type, "path"):
         declarationTypes[node.name] = node.type.path.name
     return returnString        
@@ -186,7 +200,8 @@ def Declaration_Variable(node):
     return allocate(node)
 
 def EmptyStatement(node):
-    return "<EmptyStatement>" + str(node.Node_ID)
+    #return "<EmptyStatement>" + str(node.Node_ID)
+    return ""
 
 def Neq(node):
     return "(" + toC(node.left) +  " != " + toC(node.right) + ")"
@@ -279,7 +294,8 @@ def MethodCallStatement(node):
     return toC(node.methodCall)
 
 def NameMapProperty(node):
-    return "<NameMapProperty>" + str(node.Node_ID)
+    #return "<NameMapProperty>" + str(node.Node_ID)
+    return ""
 
 def P4Action(node):
     actionIDs[node.name] = node.Node_ID
@@ -291,10 +307,12 @@ def P4Action(node):
             else:
                 actionData += toC(param.type) + " " + param.name + ";\n"
             actionData += klee_make_symbolic(param.name)
+    forwardDeclarations.add(node.name + "_" + str(node.Node_ID))
     return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n\t" + actionData + toC(node.body) + "\n}\n\n"
 
 def P4Table(node):
     tableIDs[node.name] = node.Node_ID
+    forwardDeclarations.add(node.name + "_" + str(node.Node_ID))
     return "//Table\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n" + toC(node.properties) + "}\n\n"
 
 def ParameterList(node):
@@ -376,7 +394,8 @@ def selectMultiple(node, cases, exp):
     return returnString[:-6]
 
 def StringLiteral(node):
-    return "<StringLiteral>" + str(node.Node_ID)
+    #return "<StringLiteral>" + str(node.Node_ID)
+    return ""
 
 def StructField(node):
     returnString = ""
@@ -427,25 +446,31 @@ def TableProperties(node):
     return toC(node.properties)
 
 def TypeParameters(node):
-    return "<TypeParameters>" + str(node.Node_ID)
+    #return "<TypeParameters>" + str(node.Node_ID)
+    return ""
 
 def Type_Action(node):
-    return "<Type_Action>" + str(node.Node_ID)
+    #return "<Type_Action>" + str(node.Node_ID)
+    return ""
 
 def Type_ActionEnum(node):
-    return "<Type_ActionEnum>" + str(node.Node_ID)
+    #return "<Type_ActionEnum>" + str(node.Node_ID)
+    return ""
 
 def Type_Control(node):
-    return "<Type_Control>" + str(node.Node_ID)
+    #return "<Type_Control>" + str(node.Node_ID)
+    return ""
 
 def Type_Method(node):
-    return "<Type_Method>" + str(node.Node_ID)
+    #return "<Type_Method>" + str(node.Node_ID)
+    return ""
 
 def Type_Name(node):
     return toC(node.path)
 
 def TypeNameExpression(node):
-    return "<TypeNameExpression>" + str(node.Node_ID)
+    #return "<TypeNameExpression>" + str(node.Node_ID)
+    return ""
 
 def Type_Package(node):
     global package
@@ -467,16 +492,19 @@ def Type_Typedef(node):
     return "typedef " + bitsSizeToType(node.type.size) + " " + node.name + ";\n"
     
 def Type_Unknown(node):
-    return "<Type_Unknown>" + str(node.Node_ID)
+    #return "<Type_Unknown>" + str(node.Node_ID)
+    return ""
 
 def Type_Error(node):
-    return "<Type_Error>" + str(node.Node_ID)
+    #return "<Type_Error>" + str(node.Node_ID)
+    return ""
 
 def Type_Extern(node):
     return ""
 
 def Declaration_MatchKind(node):
-    return "<Declaration_MatchKind>" + str(node.Node_ID)
+    #return "<Declaration_MatchKind>" + str(node.Node_ID)
+    return ""
 
 def Type_Header(node):
     #not sure if it remains
@@ -507,10 +535,12 @@ def P4Parser(node):
     return returnString 
 
 def Type_Enum(node):
-    return "<Type_Enum>" + str(node.Node_ID)
+    #return "<Type_Enum>" + str(node.Node_ID)
+    return ""
 
 def Type_Parser(node):
-    return "<Type_Parser>" + str(node.Node_ID)
+    #return "<Type_Parser>" + str(node.Node_ID)
+    return ""
 
 def ParserState(node):
     components = ""
@@ -523,6 +553,7 @@ def ParserState(node):
             expression += "();" #it is not a select, thus it is a direct parser state transition
     if node.name == "reject":
         expression += "printf(\"Packet dropped\");\n\texit(0);"
+    forwardDeclarations.add(node.name)
     parser = "void " + node.name + "() {\n" + components + "\t" + expression + "\n}\n\n"
     return parser
 
@@ -608,11 +639,11 @@ def emit(node):
                 size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
                 if hdrName.split(".")[1] in headerStackSize.keys():
                     for idx in range(headerStackSize[hdrName.split(".")[1]]):
-                        returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "["+ str(idx) + "]." + field.name + ": \", " + hdrName + "[" + str(idx) + "]." + field.name + ");\n\t"
+                        #returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "["+ str(idx) + "]." + field.name + ": \", " + hdrName + "[" + str(idx) + "]." + field.name + ");\n\t"
                         global emitPosition
                         emitPosition += size
                 else:
-                    returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "." + field.name + ": \", " + hdrName + "." + field.name + ");\n\t"
+                    #returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "." + field.name + ": \", " + hdrName + "." + field.name + ");\n\t"
                     global emitPosition
                     emitPosition += size
     return returnString

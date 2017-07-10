@@ -3,6 +3,8 @@ TODO: BOTH
 - implied reject state
     - default at select expressions
     - if no transition them call explicitly
+- reject next of header stack of invalid position
+
 
 TODO: SEFL
 
