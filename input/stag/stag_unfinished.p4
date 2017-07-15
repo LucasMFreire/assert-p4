@@ -2,11 +2,8 @@
 #include <core.p4>
 #include <v1model.p4>
 
-const bit<8>  UDP_PROTOCOL = 0x11;
 const bit<16> TYPE_IPV4 = 0x800;
 const bit<5>  IPV4_OPTION_STAG = 31;
-
-#define MAX_HOPS 9
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -15,7 +12,6 @@ const bit<5>  IPV4_OPTION_STAG = 31;
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
-typedef bit<32> switchID_t;
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -38,6 +34,10 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
+struct metadata {
+    
+}
+
 header ipv4_option_t {
     bit<1> copyFlag;
     bit<2> optClass;
@@ -53,11 +53,7 @@ header stag_t {
 header local_md_t {
     bit<8>  src_port_color;
     bit<8>  dst_port_color;
-}
-
-struct metadata {
-    ingress_metadata_t   ingress_metadata;
-    parser_metadata_t   parser_metadata;
+    bit<1>  toLocal;
 }
 
 struct headers {
@@ -133,18 +129,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         mark_to_drop();
     }
     
-    action add_stag_option(bit<8> color) {
-        hdr.ipv4_option.setValid();
-        hdr.ipv4_option.copyFlag     = 1;
-        hdr.ipv4_option.optClass     = 2;  /* Debugging and Measurement */
-        hdr.ipv4_option.option       = IPV4_OPTION_STAG;
-        hdr.ipv4_option.optionLength = 4;  /* sizeof(ipv4_option) + sizeof(stag) */
         
-        hdr.stag.setValid();
-        hdr.stag.source_color = color
-        hdr.ipv4.ihl = hdr.ipv4.ihl + 1;
-    }
-    
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
@@ -152,11 +137,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
-    table stag {
-        actions        = { add_stag_option; NoAction; }
-        default_action =  NoAction();      
-    }
-    
+        
     table ipv4_lpm {
         key = {
             hdr.ipv4.dstAddr: lpm;
@@ -169,15 +150,47 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         size = 1024;
         default_action = NoAction();
     }
-    
+
+    action to_local(bit<8> color){
+	local_md.dst_port_color = color;
+	local_md.toLocal = 1;
+    }
+
+    action to_core(){
+	local_md.toLocal = 0;
+    }
+
+    table core_local {
+	key = {hdr.ipv4.dstAddr: ternary;}
+	actions = { to_local; to_core; }
+	size = 1024;
+	default_action = to_core;
+    }    
+
+    table color_check {
+	key = {
+	    local_md.dst_port_color: exact;
+	    local_md.src_port_color: exact;
+	}
+	actions = {
+	    drop;
+	    NoAction;
+	}
+	size = 1024;
+	default_action = drop;
+    }
+	
     apply {
         if (hdr.ipv4.isValid()) {
-            ipv4_lpm.apply();
-            
-            if (!hdr.stag.isValid()) {
-                add_stag_option();
-            }    
+            ipv4_lpm.apply();    
         }
+
+	if (core_local.apply().action_run){
+	     to_local: {
+		color_check.apply();
+	     }
+	}
+
     }
 }
 
@@ -186,7 +199,30 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
 *************************************************************************/
 
 control egress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
-    apply {  }
+  action add_stag_option(bit<8> color) {
+        hdr.ipv4_option.setValid();
+        hdr.ipv4_option.copyFlag     = 1;
+        hdr.ipv4_option.optClass     = 2;
+        hdr.ipv4_option.option       = IPV4_OPTION_STAG;
+        hdr.ipv4_option.optionLength = 4;  /* sizeof(ipv4_option) + sizeof(stag) */
+        
+        hdr.stag.setValid();
+        hdr.stag.source_color = color
+        hdr.ipv4.ihl = hdr.ipv4.ihl + 1;
+  }
+
+  table stag {
+	key = { standard_metadata.ingress_port : exact; }
+        actions        = { add_stag_option; NoAction; }
+        default_action =  NoAction();      
+  }
+}
+  apply { 
+	if (!hdr.stag.isValid() {
+	    // Packet from local port, map its color
+	    stag.apply();
+	}
+  }
 }
 
 /*************************************************************************
@@ -229,7 +265,9 @@ control DeparserImpl(packet_out packet, in headers hdr) {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
         packet.emit(hdr.ipv4_option);
-        packet.emit(hdr.stag);              
+	if(!local_md.toLocal){
+            packet.emit(hdr.stag);
+	}              
     }
 }
 
