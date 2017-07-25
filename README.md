@@ -1,10 +1,10 @@
 # assert-p4
 
-Translate a P4 program to [SEFL](https://github.com/nets-cs-pub-ro/Symnet) from its *json* file:
+To translate a P4 program to [SEFL](https://github.com/nets-cs-pub-ro/Symnet) from its *json* file:
 
 `python src/P4_to_SEFL.py <filename>.json`
 
-Translate a P4 program to a C model to be executed by [klee](https://github.com/klee/klee) from its *json* file:
+To translate a P4 program to a C model to be executed by [klee](https://github.com/klee/klee) from its *json* file:
 
 `python src/P4_to_C.py <filename>.json`
 
