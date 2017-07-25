@@ -1,4 +1,4 @@
-# assert-P4
+# assert-p4
 
 Translate a P4 program to [SEFL](https://github.com/nets-cs-pub-ro/Symnet) from its *json* file:
 
