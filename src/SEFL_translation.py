@@ -11,6 +11,7 @@ actionIDs = {} #actionName, nodeID
 tableIDs = {} #tableName, nodeID
 declarationTypes = {} #instanceName, instanceType
 processedBlocks = set() #blockId set
+package = ""
 
 def run(node):
     returnString = ""
@@ -41,7 +42,7 @@ def P4Program(node):
 
 def P4Control(node):
     returnString = "//Control\n"
-    returnString += "val " + node.name + " = InstructionBlock(\n\t"
+    returnString += "lazy val " + node.name + " = InstructionBlock(\n\t"
     actions = ""
     tables = ""
     for local in node.controlLocals.vec:
@@ -64,18 +65,30 @@ def P4Control(node):
     return returnString
 
 def BlockStatement(node):
-    blockName = "block" + str(node.Node_ID)
-    if node.Node_ID not in processedBlocks:
-        processedBlocks.add(node.Node_ID)
-        components = ""
-        for v in node.components.vec:
-            nodeString = toSEFL(v)
-            if nodeString != "":
-                components = components + "\t" + nodeString + ",\n"
-        components = components[:-2]
-        block = "val " + blockName + " = InstructionBlock(\n" + components + "\n)\n\n"
-        blocks.append(block)
-    return blockName
+    #blockName = "block" + str(node.Node_ID)
+    #if node.Node_ID not in processedBlocks:
+    #    processedBlocks.add(node.Node_ID)
+    #    components = ""
+    #    for v in node.components.vec:
+    #        nodeString = toSEFL(v)
+    #        if nodeString != "":
+    #            components = components + "\t" + nodeString + ",\n"
+    #    components = components[:-2]
+    #    block = "lazy val " + blockName + " = InstructionBlock(\n" + components + "\n)\n\n"
+    #    blocks.append(block)
+    #return blockName
+
+    returnString = "\n\t\tInstructionBlock(\n"
+    for v in node.components.vec:
+        nodeString = toSEFL(v)
+        if nodeString != "":
+            returnString += "\t\t\t" + nodeString + ",\n"
+    returnString = returnString[:-2]
+    returnString += "\n\t\t)"
+    if len(node.components.vec) > 0:
+        return returnString
+    else:
+        return ""
 
 def BAnd(node):
     return "<BOr>" + str(node.Node_ID)
@@ -162,7 +175,10 @@ def BoolLiteral(node):
         return "ConstantValue(0)"
 
 def Constant(node):
-    return "ConstantValue(" + str(node.value) + ")"
+    if node.type.Node_Type == "Type_Bits":
+        return "ConstantBitVector(" + str(node.value) + ", " + str(node.type.size) + ")"
+    else:
+        return "ConstantValue(" + str(node.value) + ")"
 
 def ConstructorCallExpression(node):
     return "<ConstructorCallExpression>" + str(node.Node_ID) 
@@ -170,11 +186,17 @@ def ConstructorCallExpression(node):
 def Declaration_Instance(node):
     returnString = ""
     if node.name == "main":
-        parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
-        ingress = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
-        egress = node.arguments.vec[3].type.path.name if hasattr(node.arguments.vec[3].type, "path") else node.arguments.vec[3].type.name
-        deparser = node.arguments.vec[5].type.path.name if hasattr(node.arguments.vec[5].type, "path") else node.arguments.vec[5].type.name
-        returnString += "val main = InstructionBlock(" +  parser + ", Allocate(\"action_run\"), " + ingress + ", " + egress + ", " + deparser +  ")\n"
+        if package == "V1Switch":
+            parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
+            ingress = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
+            egress = node.arguments.vec[3].type.path.name if hasattr(node.arguments.vec[3].type, "path") else node.arguments.vec[3].type.name
+            deparser = node.arguments.vec[5].type.path.name if hasattr(node.arguments.vec[5].type, "path") else node.arguments.vec[5].type.name
+            returnString += "lazy val main = InstructionBlock(" +  parser + ", Allocate(\"action_run\"), " + ingress + ", " + egress + ", " + deparser +  ")\n"
+        elif package == "VSS":
+            parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
+            ingress = node.arguments.vec[1].type.path.name if hasattr(node.arguments.vec[1].type, "path") else node.arguments.vec[1].type.name
+            deparser = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
+            returnString += "lazy val main = InstructionBlock(" +  parser + ", Allocate(\"action_run\"), " + ingress + ", " + deparser +  ")\n"
     elif hasattr(node.type, "path"):
         declarationTypes[node.name] = node.type.path.name
     return returnString        
@@ -270,7 +292,7 @@ def MethodCallExpression(node):
         returnString +=  "//Extern: " + toSEFL(node.method)
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
-        returnString += "If(Constrain(\"" + node.arguments.vec[0].path.name + "\", :==:(ConstantValue(0))), Fail(\"" + node.arguments.vec[1].member + "\")"
+        returnString += "If(Constrain(\"" + node.arguments.vec[0].path.name + "\", :==:(ConstantValue(0))), Fail(\"" + node.arguments.vec[1].member + "\"))"
      #SetValid method
     elif hasattr(node.method, 'member') and node.method.member == "setValid":
         returnString += "Assign(\"" + toSEFL(node.method.expr) + ".isValid\", ConstantValue(1))"
@@ -292,12 +314,12 @@ def P4Action(node):
     actionData = "Assign(\"action_run\", ConstantValue(" + str(node.Node_ID) + ")), \n\t"
     for param in node.parameters.parameters.vec:
         if param.direction == "":
-            actionData += "Assign(\"" + param.name + "\", SymbolicValue()),\n\t"
-    return "// Action\nval " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n\t" + actionData + toSEFL(node.body) + "\n)\n\n"
+            actionData += "Assign(\"" + param.name + "\", SymbolicValue()),\n\t" #TODO: SymbolicBitVector here
+    return "// Action\nlazy val " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n\t" + actionData + toSEFL(node.body) + "\n)\n\n"
 
 def P4Table(node):
     tableIDs[node.name] = node.Node_ID
-    return "//Table\nval " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n" + toSEFL(node.properties) + ")\n\n"
+    return "//Table\nlazy val " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n" + toSEFL(node.properties) + ")\n\n"
 
 def ParameterList(node):
     returnString = ""
@@ -442,16 +464,23 @@ def Type_ActionEnum(node):
     return "<Type_ActionEnum>" + str(node.Node_ID)
 
 def Type_Control(node):
-    return "<Type_Control>" + str(node.Node_ID)
+    #return "<Type_Control>" + str(node.Node_ID)
+    return ""
 
 def Type_Method(node):
-    return "<Type_Method>" + str(node.Node_ID)
+    #return "<Type_Method>" + str(node.Node_ID)
+    return ""
 
 def Type_Name(node):
     return "<Type_Name>" + str(node.Node_ID)
 
+def TypeNameExpression(node):
+    return ""
+
 def Type_Package(node):
-    return "<Type_Package>" + str(node.Node_ID)
+    global package
+    package = node.name
+    return ""
 
 def Type_Struct(node):
     structs[node.name] = node.fields.vec 
@@ -468,13 +497,15 @@ def Type_Unknown(node):
     return "<Type_Unknown>" + str(node.Node_ID)
 
 def Type_Error(node):
-    return "<Type_Error>" + str(node.Node_ID)
+    #return "<Type_Error>" + str(node.Node_ID)
+    return ""
 
 def Type_Extern(node):
     return ""
 
 def Declaration_MatchKind(node):
-    return "<Declaration_MatchKind>" + str(node.Node_ID)
+    #return "<Declaration_MatchKind>" + str(node.Node_ID)
+    return ""
 
 def Type_Header(node):
     headerName = node.name
@@ -487,9 +518,11 @@ def Type_Header(node):
 
 def P4Parser(node):
     returnString = toSEFL(node.states)
-    returnString += "val " + node.name + " = InstructionBlock(\n\t"
+    returnString += "lazy val " + node.name + " = InstructionBlock(\n\t"
     for l in node.parserLocals.vec:
-        returnString += toSEFL(l) + ",\n\t"
+        parseLocal = toSEFL(l)
+        if parseLocal != "":
+            returnString += toSEFL(l) + ",\n\t"
     returnString += declareParameters(node)
     returnString += "\tstart\n)\n"
     return returnString 
@@ -498,7 +531,8 @@ def Type_Enum(node):
     return "<Type_Enum>" + str(node.Node_ID)
 
 def Type_Parser(node):
-    return "<Type_Parser>" + str(node.Node_ID)
+    #return "<Type_Parser>" + str(node.Node_ID)
+    return ""
 
 def ParserState(node):
     components = ""
@@ -509,11 +543,11 @@ def ParserState(node):
         expression = toSEFL(node.selectExpression)
     if node.name == "reject":
         expression += "Fail(\"Packet dropped\")"
-    parser = "val " + node.name + " = InstructionBlock(\n" + components + "\t" + expression + "\n)\n\n"
+    parser = "lazy val " + node.name + " = InstructionBlock(\n" + components + "\t" + expression + "\n)\n\n"
     return parser
 
 
-    returnString = "val parserState_" + node.name + " = InstructionBlock(\n" + toSEFL(node.components) + ")\n"
+    returnString = "lazy val parserState_" + node.name + " = InstructionBlock(\n" + toSEFL(node.components) + ")\n"
     return returnString
 
 ########### HELPER FUNCTIONS ###########
@@ -717,7 +751,8 @@ def extract(node):
         elif header[0] == getHeaderType(node.arguments.vec[0].member):
             returnString += "\tAssign(\"" + headerToExtract + ".isValid\", ConstantValue(1)),\n"
             for field in header[1]:
-                returnString += "\tAssign(\"" + headerToExtract + "." + field.name + "\", SymbolicValue()),\n"
+                size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
+                returnString += "\tAssign(\"" + headerToExtract + "." + field.name + "\", SymbolicBitVector(" + str(size) + ")),\n"
     return returnString[:-2]
 
 
@@ -736,4 +771,4 @@ def mul_constant(const, node):
 # ---- V1 specific ----
 
 def mark_to_drop():
-    return "val mark_to_drop = Fail(\"Packet dropped\")\n"
+    return "lazy val mark_to_drop = Fail(\"Packet dropped\")\n"

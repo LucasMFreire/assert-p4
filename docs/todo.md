@@ -9,11 +9,8 @@ TODO: BOTH
 TODO: SEFL
 
 - annotations
-
-- what happens if a table doesn't match at all?
-
--  forward reference extends over definition of value block429967
-
+- parser recursion?
+- what happens if a table doesn't match at all? A: Default action
 - bitwise operations
     - “underflow” or “overflow” wrap around
     - Slice
