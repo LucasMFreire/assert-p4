@@ -314,8 +314,11 @@ def P4Action(node):
     actionData = "Assign(\"action_run\", ConstantValue(" + str(node.Node_ID) + ")), \n\t"
     for param in node.parameters.parameters.vec:
         if param.direction == "":
-            actionData += "Assign(\"" + param.name + "\", SymbolicValue()),\n\t" #TODO: SymbolicBitVector here
-    return "// Action\nlazy val " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n\t" + actionData + toSEFL(node.body) + "\n)\n\n"
+            actionData +=  "Assign(\"" + param.name + "\", SymbolicBitVector(" + str(paramSize(param)) + ")),\n\t"
+    body = toSEFL(node.body)
+    if body == "":
+        actionData = actionData[:-4]    
+    return "// Action\nlazy val " + node.name + "_" + str(node.Node_ID) + " = InstructionBlock(\n\t" + actionData + body + "\n)\n\n"
 
 def P4Table(node):
     tableIDs[node.name] = node.Node_ID
@@ -367,6 +370,7 @@ def SelectExpression(node):
 
 def selectSingle(node, cases, exp):
     returnString = ""
+    atLeastOneIf = False
     for case in cases:
         if case.keyset.Node_Type == 'Mask':
             #todo: fix mask #bitop
@@ -374,9 +378,10 @@ def selectSingle(node, cases, exp):
         elif case.keyset.Node_Type == 'DefaultExpression':
             returnString += case.state.path.name
         elif case.keyset.Node_Type == 'Constant':
-            returnString += "If(Constrain(\"" + str(exp[0]) + "\", :==:(ConstantValue(" + str(case.keyset.value) + "))), " + case.state.path.name + ",\n\t"
+            atLeastOneIf = True
+            returnString += "If(Constrain(\"" + str(exp[0]) + "\", :==:(ConstantBitVector(" + str(case.keyset.value) + ", " + str(paramSize(case.keyset)) + "))), " + case.state.path.name + ",\n\t"
     #close with ) according to cases length
-    if len(cases) == 1:
+    if len(cases) == 1 and atLeastOneIf:
         returnString = returnString[:-3] + ")"
     else:
         for i in range(0, len(cases) - 1):
@@ -528,7 +533,8 @@ def P4Parser(node):
     return returnString 
 
 def Type_Enum(node):
-    return "<Type_Enum>" + str(node.Node_ID)
+    #return "<Type_Enum>" + str(node.Node_ID)
+    return ""
 
 def Type_Parser(node):
     #return "<Type_Parser>" + str(node.Node_ID)
@@ -552,6 +558,10 @@ def ParserState(node):
 
 ########### HELPER FUNCTIONS ###########
 
+def paramSize(param):
+    size = typedef[param.type.path.name].type.size if param.type.Node_Type == "Type_Name" else param.type.size
+    return size
+
 def declareParameters(node):
     returnString = ""
     for param in node.type.applyParams.parameters.vec:
@@ -574,7 +584,7 @@ def declareParameter(param):
                 returnString += allocateHeader(param, h)
         else: # struct field is not a header
             returnString += "\tAllocate(\"" + param.name + "." + h.name + "\"),\n"
-            returnString += "\tAssign(\"" + param.name + "." + h.name + "\", SymbolicValue()),\n"
+            #returnString += "\tAssign(\"" + param.name + "." + h.name + "\", SymbolicBitVector(" + str(paramSize(param)) + ")),\n"
     return returnString
 
 def allocateHeader(param, h, stackIndex = -1):
@@ -714,7 +724,7 @@ def emit(node):
         if header[0] == getHeaderType(headerName):
             for field in header[1]:
                 returnString += "CreateTag(\"" + hdrName + "." + field.name + "\", " + str(emitPosition) + "),\n\t"
-                size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
+                size = paramSize(field)
                 returnString += "Allocate(Tag(\"" + hdrName + "." + field.name + "\"), " + str(size) + "),\n\t"
                 returnString += "Assign(Tag(\"" + hdrName + "." + field.name + "\"), :@(\"" + hdrName + "." + field.name + "\")),\n\t"
                 global emitPosition
@@ -751,8 +761,7 @@ def extract(node):
         elif header[0] == getHeaderType(node.arguments.vec[0].member):
             returnString += "\tAssign(\"" + headerToExtract + ".isValid\", ConstantValue(1)),\n"
             for field in header[1]:
-                size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
-                returnString += "\tAssign(\"" + headerToExtract + "." + field.name + "\", SymbolicBitVector(" + str(size) + ")),\n"
+                returnString += "\tAssign(\"" + headerToExtract + "." + field.name + "\", SymbolicBitVector(" + str(paramSize(field)) + ")),\n"
     return returnString[:-2]
 
 
