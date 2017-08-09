@@ -13,12 +13,12 @@ if [ $2 = "sefl" ]; then
   sudo cp SEFLRunner.scala /home/$USER/Desktop/Symnet/src/main/scala/org/change/v2/runners/experiments/SEFLRunner.scala
   STARTTIME=$(date +%s)
   cd /home/$USER/Desktop/Symnet
-  sudo sbt sample
+  /usr/bin/time -o /home/$USER/Desktop/assert-p4/experiments/benchmark/results/sefl/$1_mem.txt sudo sbt sample -mem 3000 -J-Xmx3g
 else
   python /home/$USER/Desktop/assert-p4/src/P4_to_C.py file.json > benchmark_model.c
   llvm-gcc -I ../../include -emit-llvm -c -g benchmark_model.c
   STARTTIME=$(date +%s)
-  klee --search=dfs --warnings-only-to-file --no-output benchmark_model.o
+  /usr/bin/time -o /home/$USER/Desktop/assert-p4/experiments/benchmark/results/c/$1_mem.txt klee --search=dfs --warnings-only-to-file --no-output benchmark_model.o
 fi
 
 ENDTIME=$(date +%s)
