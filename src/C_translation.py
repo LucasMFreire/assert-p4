@@ -15,6 +15,7 @@ forwardingRules = {}
 
 def run(node, rules):
     if rules:
+        global forwardingRules
         forwardingRules = rules
     returnString = "#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint action_run;\n\n"
     program = toC(node)
@@ -117,23 +118,10 @@ def Mul(node):
     return str(toC(node.left)) + " * " + str(toC(node.right))
 
 def ActionList(node):
-    #assuming every action will be forked
-    returnString = "\tint symbol;\n" + klee_make_symbolic("symbol")
-    returnString += "\tswitch(symbol) {\n"
-    for idx,action in enumerate(node.actionList.vec):
-        if idx == len(node.actionList.vec) - 1:
-            returnString += "\t\tdefault: "
-        else:
-            returnString += "\t\tcase " + str(idx) + ": "
-        if action.expression.Node_Type == "PathExpression":
-            returnString += action.expression.path.name + "_" + str(actionIDs[action.expression.path.name]) + "(); "
-        elif action.expression.Node_Type == "MethodCallExpression":
-            returnString += action.expression.method.path.name + "_" + str(actionIDs[action.expression.method.path.name]) + "(); "
-        else:
-            returnString += "ERROR:UNKNOWN ACTION LIST TYPE"
-        returnString += "break;\n"
-    returnString += "\t}"
-    return returnString
+    if forwardingRules:
+        return actionListWithRules(node)
+    else:
+        return actionListNoRules(node)
 
 def ActionListElement(node):
     #return "<ActionListElement>" + str(node.Node_ID) 
@@ -303,15 +291,26 @@ def NameMapProperty(node):
 def P4Action(node):
     actionIDs[node.name] = node.Node_ID
     actionData = "action_run = " + str(node.Node_ID) + ";\n\t"
+    parameters = ""
     for param in node.parameters.parameters.vec:
         if param.direction == "":
-            if param.type.Node_Type == "Type_Bits":
-                actionData += bitsSizeToType(param.type.size) + " " + param.name + ";\n"
+            if forwardingRules:
+                parameter = ""
+                if param.type.Node_Type == "Type_Bits":
+                    parameter = bitsSizeToType(param.type.size) + " " + param.name
+                else:
+                    parameter = toC(param.type) + " " + param.name 
+                parameters += parameter + ", "
             else:
-                actionData += toC(param.type) + " " + param.name + ";\n"
-            actionData += klee_make_symbolic(param.name)
+                if param.type.Node_Type == "Type_Bits":
+                    actionData += bitsSizeToType(param.type.size) + " " + param.name + ";\n"
+                else:
+                    actionData += toC(param.type) + " " + param.name + ";\n"
+                actionData += klee_make_symbolic(param.name)
     forwardDeclarations.add(node.name + "_" + str(node.Node_ID))
-    return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n\t" + actionData + toC(node.body) + "\n}\n\n"
+    if parameters != "":
+        parameters = parameters[:-2]
+    return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "(" + parameters + ") {\n\t" + actionData + toC(node.body) + "\n}\n\n"
 
 def P4Table(node):
     tableIDs[node.name] = node.Node_ID
@@ -565,6 +564,28 @@ def ParserState(node):
     return returnString
 
 ########### HELPER FUNCTIONS ###########
+
+def actionListWithRules(node):
+    #forwardingRules
+    return ""
+
+def actionListNoRules(node):
+    returnString = "\tint symbol;\n" + klee_make_symbolic("symbol")
+    returnString += "\tswitch(symbol) {\n"
+    for idx,action in enumerate(node.actionList.vec):
+        if idx == len(node.actionList.vec) - 1:
+            returnString += "\t\tdefault: "
+        else:
+            returnString += "\t\tcase " + str(idx) + ": "
+        if action.expression.Node_Type == "PathExpression":
+            returnString += action.expression.path.name + "_" + str(actionIDs[action.expression.path.name]) + "(); "
+        elif action.expression.Node_Type == "MethodCallExpression":
+            returnString += action.expression.method.path.name + "_" + str(actionIDs[action.expression.method.path.name]) + "(); "
+        else:
+            returnString += "ERROR:UNKNOWN ACTION LIST TYPE"
+        returnString += "break;\n"
+    returnString += "\t}"
+    return returnString
 
 def SymbolizeParameters(node):
     returnString = ""
