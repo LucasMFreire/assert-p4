@@ -11,8 +11,11 @@ tableIDs = {} #tableName, nodeID
 declarationTypes = {} #instanceName, instanceType
 forwardDeclarations = set()
 package = ""
+forwardingRules = {}
 
-def run(node):
+def run(node, rules):
+    if rules:
+        forwardingRules = rules
     returnString = "#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint action_run;\n\n"
     program = toC(node)
     for declaration in forwardDeclarations:
