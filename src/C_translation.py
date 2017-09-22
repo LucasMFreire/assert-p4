@@ -11,6 +11,7 @@ tableIDs = {} #tableName, nodeID
 declarationTypes = {} #instanceName, instanceType
 forwardDeclarations = set()
 package = ""
+currentTable = "" 
 forwardingRules = {}
 
 def run(node, rules):
@@ -314,6 +315,8 @@ def P4Action(node):
 
 def P4Table(node):
     tableIDs[node.name] = node.Node_ID
+    global currentTable
+    currentTable = node.name
     forwardDeclarations.add(node.name + "_" + str(node.Node_ID))
     return "//Table\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n" + toC(node.properties) + "}\n\n"
 
@@ -567,7 +570,16 @@ def ParserState(node):
 
 def actionListWithRules(node):
     #forwardingRules
-    return ""
+    returnString = ""
+    for rule in forwardingRules[currentTable]:
+        if rule[0] == "table_add":
+            #if exact:
+            # ...
+            returnString += "\tif(){\n\t\t" + rule[1] + "();\n\t} else"
+        elif rule[0] == "table_set_default":
+            pass
+    returnString += str(forwardingRules[currentTable])
+    return returnString
 
 def actionListNoRules(node):
     returnString = "\tint symbol;\n" + klee_make_symbolic("symbol")
