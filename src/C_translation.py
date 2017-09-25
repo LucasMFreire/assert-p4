@@ -13,6 +13,7 @@ forwardDeclarations = set()
 package = ""
 currentTable = "" 
 forwardingRules = {}
+currentTableKeys = {} #keyName, (exact, lpm or ternary)
 
 def run(node, rules):
     if rules:
@@ -119,10 +120,10 @@ def Mul(node):
     return str(toC(node.left)) + " * " + str(toC(node.right))
 
 def ActionList(node):
-    if forwardingRules:
-        return actionListWithRules(node)
-    else:
+    if not forwardingRules:
         return actionListNoRules(node)
+    else:
+        return ""
 
 def ActionListElement(node):
     #return "<ActionListElement>" + str(node.Node_ID) 
@@ -213,7 +214,10 @@ def IfStatement(node):
 def Key(node):
     returnString = "\t// keys: "
     for key in node.keyElements.vec:
-            returnString += toC(key.expression) + ", "
+        keyName = toC(key.expression)
+        matchType = toC(key.matchType)
+        currentTableKeys[keyName] = matchType
+        returnString += keyName +  ":" + matchType + ", "
     return returnString[:-2]
 
 def LNot(node):
@@ -318,7 +322,10 @@ def P4Table(node):
     global currentTable
     currentTable = node.name
     forwardDeclarations.add(node.name + "_" + str(node.Node_ID))
-    return "//Table\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n" + toC(node.properties) + "}\n\n"
+    tableBody = toC(node.properties)
+    if forwardingRules:
+        tableBody = actionListWithRules(node)
+    return "//Table\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n" + tableBody + "\n}\n\n"
 
 def ParameterList(node):
     returnString = ""
@@ -338,6 +345,8 @@ def Property(node):
     elif node.name == "size":
         return "\t// size " + toC(node.value)
     elif node.name == "actions":
+        return toC(node.value)
+    elif node.name == "key":
         return toC(node.value)
     else:
         return ""
@@ -571,14 +580,26 @@ def ParserState(node):
 def actionListWithRules(node):
     #forwardingRules
     returnString = ""
+    defaultRule = ""
     for rule in forwardingRules[currentTable]:
         if rule[0] == "table_add":
-            #if exact:
-            # ...
-            returnString += "\tif(){\n\t\t" + rule[1] + "();\n\t} else"
+            match = ""
+            for idx, key in enumerate(currentTableKeys):
+                if currentTableKeys[key] == "exact":
+                    match += key + " == " + rule[2][idx] + "&& "
+            match = match[:-3]
+            arguments = ""
+            for arg in rule[3]:
+                arguments += arg + ", "
+            arguments = arguments[:-2]
+            returnString += "\tif(" + match + "){\n\t\t" + rule[1] + "(" + arguments + ");\n\t} else"
         elif rule[0] == "table_set_default":
-            pass
-    returnString += str(forwardingRules[currentTable])
+            defaultRule = " {\n\t\t" + rule[1] + "();\n\t}"
+    if defaultRule != "":
+        returnString += defaultRule
+    else:
+        returnString = returnString[:-5]
+    #returnString += str(forwardingRules[currentTable])
     return returnString
 
 def actionListNoRules(node):
