@@ -592,15 +592,22 @@ def actionListWithRules(node):
             for arg in rule[3]:
                 arguments += arg + ", "
             arguments = arguments[:-2]
-            returnString += "\tif(" + match + "){\n\t\t" + rule[1] + "(" + arguments + ");\n\t} else"
+            returnString += "\tif(" + match + "){\n\t\t" + getActionFullName(rule[1]) + "(" + arguments + ");\n\t} else"
         elif rule[0] == "table_set_default":
-            defaultRule = " {\n\t\t" + rule[1] + "();\n\t}"
+            defaultRule = " {\n\t\t" + getActionFullName(rule[1]) + "();\n\t}"
     if defaultRule != "":
         returnString += defaultRule
     else:
         returnString = returnString[:-5]
     #returnString += str(forwardingRules[currentTable])
     return returnString
+
+def getActionFullName(actionName):
+    actionName = actionName + "_"
+    for action in actionIDs:
+        if actionName in action:
+            return action + "_" + str(actionIDs[action])
+    return "UNKNOWN_ACTION"
 
 def actionListNoRules(node):
     returnString = "\tint symbol;\n" + klee_make_symbolic("symbol")
