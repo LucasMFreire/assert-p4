@@ -586,11 +586,11 @@ def actionListWithRules(node):
             match = ""
             for idx, key in enumerate(currentTableKeys):
                 if currentTableKeys[key] == "exact":
-                    match += key + " == " + rule[2][idx] + "&& "
+                    match += key + " == " + convertCommandValue(rule[2][idx]) + "&& "
             match = match[:-3]
             arguments = ""
             for arg in rule[3]:
-                arguments += arg + ", "
+                arguments += convertCommandValue(arg) + ", "
             arguments = arguments[:-2]
             returnString += "\tif(" + match + "){\n\t\t" + getActionFullName(rule[1]) + "(" + arguments + ");\n\t} else"
         elif rule[0] == "table_set_default":
@@ -601,6 +601,12 @@ def actionListWithRules(node):
         returnString = returnString[:-5]
     #returnString += str(forwardingRules[currentTable])
     return returnString
+
+def convertCommandValue(arg):
+    if ":" in arg:
+        return str(int(arg.translate(None, ":"), 16))
+    else:
+        return arg
 
 def getActionFullName(actionName):
     actionName = actionName + "_"
