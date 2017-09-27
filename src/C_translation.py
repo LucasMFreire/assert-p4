@@ -19,7 +19,7 @@ def run(node, rules):
     if rules:
         global forwardingRules
         forwardingRules = rules
-    returnString = "#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint action_run;\n\n"
+    returnString = "#define BITSLICE(x, a, b) ((x) >> (b)) & ((1 << ((a)-(b)+1)) - 1)\n#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint action_run;\n\n"
     program = toC(node)
     for declaration in forwardDeclarations:
         returnString += "void " + declaration + "();\n"
@@ -99,16 +99,16 @@ def Leq(node):
     return ""
 
 def LAnd(node):
-    #return "<LAnd>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " && " + toC(node.right)
 
 def LOr(node):
-    #return "<LOr>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " || " + toC(node.right)
 
 def Slice(node):
-    #return "<Slice>" + str(node.Node_ID)
-    return ""
+    value = toC(node.e0)
+    m = toC(node.e1)
+    l = toC(node.e2)
+    return "BITSLICE("+ value + ", " + m + ", " + l + ")"
 
 def Shl(node):
     return toC(node.left) + " << " +  toC(node.right)
@@ -357,7 +357,7 @@ def SelectExpression(node):
     for expression in expressions:
         if expression.Node_Type == 'Slice':
             #TODO: slice bit string currently not supported #bitop
-            return ""
+            exp.append(Slice(expression))
         elif expression.Node_Type == 'Member':
             exp.append(toC(expression.expr) + "." + expression.member)
         elif  expression.Node_Type == "MethodCallStatement":
