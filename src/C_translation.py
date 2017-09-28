@@ -16,6 +16,7 @@ forwardingRules = {}
 currentTableKeys = {} #keyName, (exact, lpm or ternary)
 globalDeclarations = ""
 finalAssertions = "void end_assertions(){\n"
+emitHeadersAssertions = []
 
 def run(node, rules):
     if rules:
@@ -155,7 +156,15 @@ def Annotations(node):
 
 def assertion(node):
     returnString = ""
-    if node.value == "traverse":
+    if "emit_header" in node.value:
+        headerToEmit = node.value[node.value.find("(")+1:node.value.find(")")].replace(".", "_")
+        globalVarName = "emit_header_" + headerToEmit + "_" + str(node.Node_ID)
+        emitHeadersAssertions.append(globalVarName)
+        global globalDeclarations
+        globalDeclarations += "\nint " + globalVarName + " = 0;\n"
+        global finalAssertions
+        finalAssertions += "\tif(" + globalVarName + " == 0){\n\t\tprintf(\"Assert error: " + headerToEmit + " not emitted\");\n\t}\n\n"
+    elif node.value == "traverse":
         globalVarName = "traverse" + "_" + str(node.Node_ID)
         global globalDeclarations
         globalDeclarations += "int " + globalVarName + " = 0;"
@@ -723,6 +732,10 @@ def emit(node):
         headerName = node.arguments.vec[0].left.member
     else:
         headerName = hdrName.split(".")[1]
+    for emitAssertion in emitHeadersAssertions:
+        if headerName in emitAssertion:
+            returnString += emitAssertion + " = 1;"
+
     for header in headers:
         if header[0] == getHeaderType(headerName):
             for field in header[1]:
