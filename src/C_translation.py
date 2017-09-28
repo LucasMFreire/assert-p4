@@ -14,6 +14,8 @@ package = ""
 currentTable = "" 
 forwardingRules = {}
 currentTableKeys = {} #keyName, (exact, lpm or ternary)
+globalDeclarations = ""
+finalAssertions = "void end_assertions(){\n"
 
 def run(node, rules):
     if rules:
@@ -21,24 +23,29 @@ def run(node, rules):
         forwardingRules = rules
     returnString = "#define BITSLICE(x, a, b) ((x) >> (b)) & ((1 << ((a)-(b)+1)) - 1)\n#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint action_run;\n\n"
     program = toC(node)
+    returnString += globalDeclarations
     for declaration in forwardDeclarations:
-        returnString += "void " + declaration + "();\n"
-    returnString += "\n" + program 
+        returnString += "\nvoid " + declaration + "();"
+    returnString += "\n" + program
+    returnString += finalAssertions + "}"
     return returnString
     
 
 def toC(node):
     #print str(node.Node_ID) + ": " + node.Node_Type
+    # test for annotations
+    returnString = ""
+    if hasattr(node, "annotations"):
+        returnString += Annotations(node.annotations)
     if 'Vector' in node.Node_Type:
-        returnString = ""
         for v in node.vec:
             #returnString += "<<" + str(v.Node_ID) + ">>"
             nodeString = toC(v)
             if nodeString != "":
                 returnString += nodeString + "\n"
-        return returnString
     else:
-        return globals()[node.Node_Type](node) #calls corresponding type function according to node type
+        returnString += globals()[node.Node_Type](node) #calls corresponding type function according to node type
+    return returnString
 
 ########### TYPE FUNCTIONS ###########
 
@@ -140,8 +147,22 @@ def Annotation(node):
     return ""
 
 def Annotations(node):
-    #return "<Annotations>" + str(node.Node_ID) 
-    return ""
+    returnString = ""
+    for annotation in node.annotations.vec:
+        if annotation.name == "assert":
+            returnString += assertion(annotation.expr.vec[0])
+    return returnString
+
+def assertion(node):
+    returnString = ""
+    if node.value == "traverse":
+        globalVarName = "traverse" + "_" + str(node.Node_ID)
+        global globalDeclarations
+        globalDeclarations += "int " + globalVarName + " = 0;"
+        global finalAssertions
+        finalAssertions += "\tif(" + globalVarName + " == 0){\n\t\tprintf(\"Assert error: " + globalVarName + " not traversed\");\n\t}\n\n"
+        returnString += globalVarName + " = 1;"
+    return returnString
 
 def ArrayIndex(node):
     return toC(node.left) + "_" + str(node.right.value)
@@ -173,12 +194,12 @@ def Declaration_Instance(node):
             ingress = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
             egress = node.arguments.vec[3].type.path.name if hasattr(node.arguments.vec[3].type, "path") else node.arguments.vec[3].type.name
             deparser = node.arguments.vec[5].type.path.name if hasattr(node.arguments.vec[5].type, "path") else node.arguments.vec[5].type.name
-            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + egress + "();\n\t" + deparser +  "();\n\treturn 0;\n}\n"
+            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + egress + "();\n\t" + deparser +  "();\n\tend_assertions();\n\treturn 0;\n}\n"
         elif package == "VSS":
             parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
             ingress = node.arguments.vec[1].type.path.name if hasattr(node.arguments.vec[1].type, "path") else node.arguments.vec[1].type.name
             deparser = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
-            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + deparser + "();\n\treturn 0;\n}\n"
+            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + deparser + "();\n\tend_assertions();\n\treturn 0;\n}\n"
     elif hasattr(node.type, "path"):
         declarationTypes[node.name] = node.type.path.name
     return returnString        
@@ -356,7 +377,6 @@ def SelectExpression(node):
     exp = []
     for expression in expressions:
         if expression.Node_Type == 'Slice':
-            #TODO: slice bit string currently not supported #bitop
             exp.append(Slice(expression))
         elif expression.Node_Type == 'Member':
             exp.append(toC(expression.expr) + "." + expression.member)
