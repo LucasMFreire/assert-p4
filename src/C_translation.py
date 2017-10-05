@@ -1,3 +1,4 @@
+import re
 
 headers = []
 structFieldsHeaderTypes = {} #structField, structFieldType
@@ -17,6 +18,7 @@ currentTableKeys = {} #keyName, (exact, lpm or ternary)
 globalDeclarations = ""
 finalAssertions = "void end_assertions(){\n"
 emitHeadersAssertions = []
+extractHeadersAssertions = []
 
 def run(node, rules):
     if rules:
@@ -151,27 +153,72 @@ def Annotations(node):
     returnString = ""
     for annotation in node.annotations.vec:
         if annotation.name == "assert":
-            returnString += assertion(annotation.expr.vec[0])
+            assertionResults = assertion(annotation.expr.vec[0].value, annotation.expr.vec[0].Node_ID)
+            returnString += assertionResults[0]
+            global finalAssertions
+            finalAssertions += "\tif(" + assertionResults[1] + "){\n\t\tprintf(\"Assert error: " + assertionResults[2] + "\");\n\t}\n\n"
     return returnString
 
-def assertion(node):
+def assertion(assertionString, nodeID):
     returnString = ""
-    if "emit_header" in node.value:
-        headerToEmit = node.value[node.value.find("(")+1:node.value.find(")")].replace(".", "_")
-        globalVarName = "emit_header_" + headerToEmit + "_" + str(node.Node_ID)
+    logicalExpression = ""
+    errorMessage = ""
+    if "if(" == assertionString[:3]: #TODO: finish this
+        ifExpression = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
+        ifParameters = re.split(r',\s*(?![^()]*\))', ifExpression)
+        left = assertion(ifParameters[0], nodeID)
+        returnString += left[0]
+        right = assertion(ifParameters[1], nodeID)
+        returnString += right[0]
+        logicalExpression = left[1] + " && !(" + right[1] + ")"
+        errorMessage = "if expression " + ifExpression + " evaluated to false"
+    elif "==" in assertionString:
+        equalityParameters = assertionString.split("==")
+        left = equalityParameters[0]
+        right = equalityParameters[1]
+        globalVarName =  left.replace(".", "_") + "_==_" + right.replace(".", "_") + "_" + str(nodeID)
+        global globalDeclarations
+        globalDeclarations += "\n int " + globalVarName + ";\n"
+        logicalExpression = globalVarName
+        returnString += globalVarName + "= (" + left + " == " + right + ");"
+    elif "constant" in assertionString:
+        constantVariable = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
+        globalVarName = "constant_" + constantVariable.replace(".", "_") + "_" + str(nodeID)
+        constantType = "??" #TODO: get proper field type
+        global globalDeclarations
+        globalDeclarations += "\n" + constantType + " " + globalVarName + ";\n"
+        logicalExpression =  globalVarName + " != " + constantVariable
+        errorMessage = constantVariable + " not constant"
+        returnString += globalVarName + " = " + constantVariable + ";"
+    elif "extract_header" in assertionString: #TODO: assign variable to true when extract field in model
+        headerToExtract = assertionString[assertionString.find("(")+1:assertionString.rfind(")")].replace(".", "_")
+        globalVarName = "extract_header_" + headerToExtract + "_" + str(nodeID)
+        extractHeadersAssertions.append(globalVarName)
+        global globalDeclarations
+        globalDeclarations += "\nint " + globalVarName + " = 0;\n"
+        logicalExpression =  globalVarName + " == 0"
+        errorMessage = headerToExtract + " not extracted"
+    elif "emit_header" in assertionString:
+        headerToEmit = assertionString[assertionString.find("(")+1:assertionString.rfind(")")].replace(".", "_")
+        globalVarName = "emit_header_" + headerToEmit + "_" + str(nodeID)
         emitHeadersAssertions.append(globalVarName)
         global globalDeclarations
         globalDeclarations += "\nint " + globalVarName + " = 0;\n"
-        global finalAssertions
-        finalAssertions += "\tif(" + globalVarName + " == 0){\n\t\tprintf(\"Assert error: " + headerToEmit + " not emitted\");\n\t}\n\n"
-    elif node.value == "traverse":
-        globalVarName = "traverse" + "_" + str(node.Node_ID)
+        logicalExpression = globalVarName + " == 0"
+        errorMessage = headerToEmit + " not emitted"
+    elif "traverse" in assertionString:
+        traverseParameter = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
+        globalVarName = "traverse" + traverseParameter +"_" + str(nodeID)
         global globalDeclarations
         globalDeclarations += "int " + globalVarName + " = 0;"
-        global finalAssertions
-        finalAssertions += "\tif(" + globalVarName + " == 0){\n\t\tprintf(\"Assert error: " + globalVarName + " not traversed\");\n\t}\n\n"
-        returnString += globalVarName + " = 1;"
-    return returnString
+        logicalExpression = globalVarName + " == 0"
+        errorMessage = globalVarName + " not traversed"
+        if traverseParameter:
+            #TODO: add globalVarName + " = 1;" to the parameter location
+            pass
+        else:
+            returnString += globalVarName + " = 1;"
+    return (returnString, logicalExpression, errorMessage)
 
 def ArrayIndex(node):
     return toC(node.left) + "_" + str(node.right.value)
@@ -760,6 +807,9 @@ def extract(node):
         returnString += headerToExtract + "_index++;"
     else: 
         returnString += headerToExtract + ".isValid = 1;"
+    for extractAssertion in extractHeadersAssertions: #FIXME:not working, assertion appears after parser
+        if headerToExtract in extractAssertion:
+            returnString += extractAssertion + " = 1;"
     return returnString
 
 def cast(expr, toType):
