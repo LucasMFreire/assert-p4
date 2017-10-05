@@ -283,6 +283,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         ack_time.write((bit<32>)meta.stats_metadata.flow_map_index, (bit<32>)meta.intrinsic_metadata.ingress_global_timestamp);
     }
     @name(".update_flow_retx_3dupack") action update_flow_retx_3dupack() {
+        @assert("if(meta.stats_metadata.dupack < 3, !traverse)"){}
         flow_pkts_retx.read(meta.stats_metadata.dummy, (bit<32>)meta.stats_metadata.flow_map_index);
         meta.stats_metadata.dummy = meta.stats_metadata.dummy + 32w1;
         flow_pkts_retx.write((bit<32>)meta.stats_metadata.flow_map_index, (bit<32>)meta.stats_metadata.dummy);
@@ -451,6 +452,11 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         }
     }
     apply {
+        @assert("if(hdr.ipv4.ttl == 0, !forward)"){}
+        @assert("constant(hdr.tcp)"){}
+        @assert("if(hdr.tcp.ack, traverse(get_sender_IP) && XOR(traverse(update_flow_rcvd), traverse(update_flow_dupack)))"){}
+        @assert("if(!hdr.tcp.ack, XOR(traverse(get_sender_IP), traverse(record_IP)) && XOR(traverse(update_flow_sent), traverse(update_flow_retx_3dupack), traverse(update_flow_flow_timeout)))"){}
+
         if (hdr.ipv4.protocol == 8w0x6) {
             if (hdr.ipv4.srcAddr > hdr.ipv4.dstAddr) {
                 lookup.apply();
