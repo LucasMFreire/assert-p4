@@ -91,8 +91,7 @@ def BAnd(node):
     return ""
 
 def BOr(node):
-    #return "<BOr>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " | " + toC(node.right)
 
 def BXor(node):
     #return "<BXor>" + str(node.Node_ID)
