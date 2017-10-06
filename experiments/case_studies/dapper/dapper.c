@@ -656,7 +656,6 @@ void update_flow_dupack_0_464299() {
 
 	meta.stats_metadata.dummy = tmp_62;
 	meta.stats_metadata.dummy = meta.stats_metadata.dummy + 1;
-
 }
 
 

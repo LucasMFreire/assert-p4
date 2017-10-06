@@ -347,7 +347,7 @@ action use_sample_rtt(){
 	modify_field(stats_metadata.dummy, stats_metadata.dummy>>3);
 	register_write(flow_srtt, stats_metadata.flow_map_index, stats_metadata.dummy);	
 	//increment the rtt samples counter
-	register_read(stats_metadata.dummy, rtt_samples, stats_metadata.flow_map_index);
+	register_read(stats_metadata.dummy, rtt_samples, stats_m/etadata.flow_map_index);
 	add_to_field(stats_metadata.dummy, 1);
 	register_write(rtt_samples, stats_metadata.flow_map_index, stats_metadata.dummy );
 }

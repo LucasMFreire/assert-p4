@@ -454,7 +454,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
     apply {
         @assert("if(hdr.ipv4.ttl == 0, !forward)"){}
         @assert("constant(hdr.tcp)"){}
-        @assert("if(hdr.tcp.ack, traverse(get_sender_IP) && XOR(traverse(update_flow_rcvd), traverse(update_flow_dupack)))"){}
+        @assert("if(hdr.tcp.ack, traverse(get_sender_IP)))"){}
         @assert("if(!hdr.tcp.ack, XOR(traverse(get_sender_IP), traverse(record_IP)) && XOR(traverse(update_flow_sent), traverse(update_flow_retx_3dupack), traverse(update_flow_flow_timeout)))"){}
 
         if (hdr.ipv4.protocol == 8w0x6) {
