@@ -4,6 +4,13 @@
 #include<stdlib.h>
 
 int action_run;
+int traverse_handle_1a = 0;
+int handle_1a_msg_type = -1;
+int traverse_handle_2a = 0;
+int handle_2a_msg_type = -1;
+int forward = 1;
+uint32_t constant_acptid;
+
 
 
 void _drop_2_163187();
@@ -43,7 +50,9 @@ typedef struct {
 } standard_metadata_t;
 
 void mark_to_drop() {
-	printf("Packet dropped\n");
+	//printf("Packet dropped\n");
+	forward = 0;
+	end_assertions();
 	exit(0);
 }
 
@@ -126,6 +135,7 @@ void start() {
 	hdr.ethernet.isValid = 1;
 	switch(hdr.ethernet.etherType){
 		case 2048:	parse_ipv4(); break;
+		default: reject();
 	}
 }
 
@@ -160,7 +170,9 @@ void accept() {
 
 
 void reject() {
-	printf("Packet dropped");
+	//printf("Packet dropped");
+	forward = 0;
+	end_assertions();
 	exit(0);
 }
 
@@ -169,7 +181,7 @@ void TopParser() {
 	klee_make_symbolic(&hdr, sizeof(hdr), "hdr");
 	klee_make_symbolic(&meta, sizeof(meta), "meta");
 	klee_make_symbolic(&standard_metadata, sizeof(standard_metadata), "standard_metadata");
-
+	constant_acptid = hdr.paxos.acptid;
 	start();
 }
 
@@ -271,6 +283,8 @@ void read_round_0_163194() {
 
 // Action
 void handle_1a_0_165781() {
+	traverse_handle_1a = 1;
+	handle_1a_msg_type = (hdr.paxos.msgtype == 0);
 	action_run = 165781;
 		hdr.paxos.msgtype = 1;
 		klee_make_symbolic(&tmp_9, sizeof(tmp_9), "tmp_9");
@@ -290,6 +304,8 @@ void handle_1a_0_165781() {
 
 // Action
 void handle_2a_0_163324() {
+	traverse_handle_2a = 1;
+	handle_2a_msg_type = (hdr.paxos.msgtype == 2);
 	action_run = 163324;
 		hdr.paxos.msgtype = 3;
 	uint32_t tmp_acptid;
@@ -372,6 +388,26 @@ void place_holder_table_163612() {
 }
 
 void end_assertions(){
+
+	if(traverse_handle_1a && !handle_1a_msg_type && (handle_1a_msg_type != -1)){
+		klee_warning_once("handle_1a executed with msgtype different that 1A");
+		klee_assert(0);
+	}
+
+	if(traverse_handle_2a && !handle_2a_msg_type && (handle_2a_msg_type != -1)){
+		klee_warning_once("handle_2a executed with msgtype different that 2A");
+		klee_assert(0);
+	}
+
+	if(forward && (constant_acptid == hdr.paxos.acptid)){
+		klee_warning_once("packet forwarded and swid not updated");
+		klee_assert(0);
+	}
+
+	if(forward && !(traverse_handle_1a || traverse_handle_2a)){
+		klee_warning("WTH???");
+		klee_assert(0);
+	}
 }
 
 int main() {

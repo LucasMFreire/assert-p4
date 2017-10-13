@@ -5,6 +5,10 @@
 
 int action_run;
 
+int traverse_increase_instance = 0;
+int mesg_type_2a = -1;
+int forward = 1;
+
 
 void forward_0_144407();
 void _drop_2_144269();
@@ -42,7 +46,9 @@ typedef struct {
 } standard_metadata_t;
 
 void mark_to_drop() {
-	printf("Packet dropped\n");
+	//printf("Packet dropped\n");
+	forward = 0;
+	end_assertions();
 	exit(0);
 }
 
@@ -159,7 +165,9 @@ void accept() {
 
 
 void reject() {
-	printf("Packet dropped");
+	//printf("Packet dropped");
+	forward = 0;
+	end_assertions();
 	exit(0);
 }
 
@@ -252,6 +260,9 @@ void _drop_2_144269() {
 
 // Action
 void increase_instance_0_144276() {
+	traverse_increase_instance = 1;
+	mesg_type_2a = (hdr.paxos.msgtype == 2);
+
 	action_run = 144276;
 	uint32_t tmp_inst;
 	klee_make_symbolic(&tmp_inst, sizeof(tmp_inst), "tmp_inst");
@@ -342,6 +353,15 @@ void place_holder_table_144543() {
 }
 
 void end_assertions(){
+	if(traverse_increase_instance && !mesg_type_2a && (mesg_type_2a != -1)){
+		klee_warning("increase_instance called without msg type 2a");
+		klee_assert(0);
+	}
+
+	if(traverse_increase_instance && !forward){
+		klee_warning("increase_instance called but packet dropped");
+		klee_assert(0);
+	}
 }
 
 int main() {
