@@ -29,8 +29,7 @@ def run(node, rules):
     returnString += globalDeclarations
     for declaration in forwardDeclarations:
         returnString += "\nvoid " + declaration + "();"
-    returnString += "\n" + program
-    returnString += finalAssertions + "}"
+    returnString += "\n\n" + finalAssertions + "}\n\n" + program
     return returnString
     
 
@@ -78,6 +77,9 @@ def P4Control(node):
     returnString += tables
     return returnString
 
+def Cmpl(node):
+    return "~" + toC(node.expr) 
+
 def BlockStatement(node):
     returnString = ""
     for v in node.components.vec:
@@ -87,15 +89,14 @@ def BlockStatement(node):
     return returnString
 
 def BAnd(node):
-    #return "<BAnd>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " & " + toC(node.right)
 
 def BOr(node):
     return toC(node.left) + " | " + toC(node.right)
 
 def BXor(node):
     #return "<BXor>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " ^ " + toC(node.right)
 
 def Cast(node):
     return cast(node.expr, node.destType)
@@ -104,8 +105,7 @@ def Geq(node):
     return toC(node.left) + " >= " +  toC(node.right)
 
 def Leq(node):
-    #return "<Leq>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " <= " +  toC(node.right)
 
 def LAnd(node):
     return toC(node.left) + " && " + toC(node.right)
@@ -220,7 +220,7 @@ def assertion(assertionString, nodeID):
     return (returnString, logicalExpression, errorMessage)
 
 def ArrayIndex(node):
-    return toC(node.left) + "_" + str(node.right.value)
+    return toC(node.left) + "[" + str(node.right.value) + "]"
 
 def AssignmentStatement(node):
     if isExternal(node.right):
@@ -301,7 +301,11 @@ def LNot(node):
 
 def Member(node):
     if node.member != 'apply':
-        return toC(node.expr) + "." + node.member
+        if node.member == "last":
+            nodeName = toC(node.expr)
+            return nodeName + "[" + nodeName + "_index - 1]"
+        else:
+            return toC(node.expr) + "." + node.member
     else:
         nodeName = toC(node.expr)
         if nodeName in tableIDs.keys():
@@ -317,12 +321,28 @@ def Method(node):
     else:
         return toC(node.type)
 
+def generatePushFront(node):
+    returnString = ""
+    count = toC(node.arguments.vec[0])
+    hdr = toC(node.method)[:-11]
+    returnString += "//push_front(" + count + ")\n"
+    returnString += "\tint header_stack_size = sizeof(" + hdr + ")/sizeof(" + hdr + "[0]);\n\t"
+    returnString += "int i;\n\t"
+    returnString += "for (i = header_stack_size - 1; i >= 0; i -= 1) {\n\t\t"
+    returnString += "if (i >= " + count + ") {\n\t\t\t"
+    returnString += hdr + "[i] = " + hdr + "[i-" + count + "];\n\t\t"
+    returnString += "} else {\n\t\t"
+    returnString += hdr + "[i].isValid = 0;\n\t}\n}\n\t"
+    returnString += hdr + "_index = " + hdr + "_index + " + count + ";\n\t"
+    returnString += "if (" + hdr + "_index > header_stack_size) " + hdr + "_index = header_stack_size;\n"
+    return returnString
+
 def MethodCallExpression(node):
     returnString = ""
-    # extract method
-    if hasattr(node.method, 'member') and node.method.member == "extract":
+    if hasattr(node.method, 'member') and node.method.member == "push_front":
+        returnString += generatePushFront(node)
+    elif hasattr(node.method, 'member') and node.method.member == "extract":
         returnString += extract(node)
-    # emit method
     elif hasattr(node.method, 'member') and node.method.member == "emit":
         returnString += emit(node)
      # execute meter, TODO: separate this into an 'extern methods' method
@@ -444,42 +464,29 @@ def SelectExpression(node):
              exp.append(toC(expression.path))
 
     cases = node.selectCases.vec
-    returnString = ""
-    multipleMatches = (cases[0].keyset.Node_Type == "ListExpression")
-    if multipleMatches:
-        returnString += selectMultiple(node, cases, exp)
-    else:
-        returnString += selectSingle(node, cases, exp)
+    returnString = select(cases, exp)
     return returnString
 
-def selectSingle(node, cases, exp):
-    returnString = "switch(" + str(exp[0]) + "){\n"
-    for case in cases:
-        if case.keyset.Node_Type == 'Mask':
-            #todo: fix mask #bitop
-            returnString = "//TODO: MASK\n"
-        elif case.keyset.Node_Type == 'DefaultExpression':
-            returnString += "\t\tdefault:\t" + case.state.path.name + "(); break;\n"
-        elif case.keyset.Node_Type == 'Constant':
-            returnString += "\t\tcase " + str(case.keyset.value) + ":\t" + case.state.path.name + "(); break;\n"
-    returnString += "\t}"
-    return returnString
-
-def selectMultiple(node, cases, exp):
+def select(cases, exp):
     returnString = ""
     for case in cases:
-        if case.keyset.Node_Type == "ListExpression":
-            fullExpression = ""
-            for idx,e in enumerate(exp):
-                if case.keyset.components.vec[idx].Node_Type == "Mask":
-                    a = toC(case.keyset.components.vec[idx].left)
-                    b = toC(case.keyset.components.vec[idx].right)
-                    fullExpression += "((" + str(e) + " & " + b + ") == (" + a + " & " + b + ")) && "
-                else:
-                    fullExpression += "(" + str(e) + " == " + str(case.keyset.components.vec[idx].value) + ") && "
-            returnString += "if(" + fullExpression[:-4] + ") {\n\t\t" + case.state.path.name + "();\n\t} else "
-        else:
-            returnString += "select with multiple parameters: unknown node type"
+        fullExpression = ""
+        for idx,e in enumerate(exp):
+            #get apropriate case depending if select has multiple arguments or not
+            if hasattr(case.keyset, 'components'):
+                node = case.keyset.components.vec[idx]
+            else:
+                node = case.keyset
+
+            if node.Node_Type == "Mask":
+                a = toC(node.left)
+                b = toC(node.right)
+                fullExpression += "((" + str(e) + " & " + b + ") == (" + a + " & " + b + ")) && "
+            elif node.Node_Type == 'Constant':
+                fullExpression += "(" + str(e) + " == " + str(node.value) + ") && "
+        if fullExpression != "":
+            returnString += "if(" + fullExpression[:-4] + ")"
+        returnString += "{\n\t\t" + case.state.path.name + "();\n\t} else "
     return returnString[:-6]
 
 def StringLiteral(node):
@@ -500,6 +507,9 @@ def StructField(node):
         returnString += "\tint " + node.name + "_index;\n"
         returnString += "\t" + structFieldsHeaderTypes[node.name] + " " + node.name + "[" + str(node.type.size.value) + "];"
     elif node.type.Node_Type == "Type_Bits":
+        #TODO: model fields with more than 64 bits properly
+        if node.type.size > 64:
+            node.type.size = 64
         returnString += "\t" + bitsSizeToType(node.type.size) + " " + node.name + " : " + str(node.type.size) + ";"
     return returnString
 
@@ -509,22 +519,19 @@ def SwitchCase(node):
 def SwitchStatement(node):
     returnString = ""
     if node.expression.member == "action_run":
-        returnString += toC(node.expression.expr) + ", \n\t"
+        returnString += toC(node.expression.expr) + "\n\t"
         defaultCase = None
         openIf = 0
         for case in node.cases.vec:
             if case.label.Node_Type != "DefaultExpression":
-                returnString += "If(Constrain(\"action_run\", :==:(" + str(actionIDs[toC(case.label)]) + ")), " + toC(case) + ", "
+                returnString += "if(action_run == " + str(actionIDs[toC(case.label)]) + ") {\n\t\t " + toC(case) + "\n\t} else "
                 openIf += 1
             else:
                 defaultCase = case
         if defaultCase:
-            returnString += toC(case)
+            returnString += "{\n\t\t" +toC(case) + "\n\t}"
         else:
-            returnString = returnString[:-2]
-        for i in range(0, openIf):
-            returnString += ")"
-
+            returnString = returnString[:-6]
 
     else:
         switchCases = toC(node.cases).replace("\n", ",")
@@ -606,6 +613,9 @@ def Type_Header(node):
     returnString = "typedef struct {\n\tuint8_t isValid : 1;\n"
     for field in node.fields.vec:
         if field.type.Node_Type == "Type_Bits":
+            #TODO: model fields with more than 64 bits properly
+            if field.type.size > 64:
+                field.type.size = 64
             returnString += "\t" + bitsSizeToType(field.type.size) + " " + field.name + " : " + str(field.type.size) + ";\n"
         else:
             typeName = toC(field.type)
@@ -822,10 +832,11 @@ def bitsSizeToType(size):
         return "uint8_t"
     elif size <= 32:
         return "uint32_t"
-    elif size <= 64:
-        return "uint64_t"
+    #elif size <= 64:
     else:
-        return "???"
+        return "uint64_t"
+    #else:
+    #    return "???"
 
 def klee_make_symbolic(var):
     return "\tklee_make_symbolic(&" + var + ", sizeof(" + var + "), \"" + var + "\");\n"
