@@ -3367,6 +3367,7 @@ control validate_outer_ipv4_header(inout headers hdr, inout metadata meta, inout
         meta.l3_metadata.lkp_ip_version = hdr.ipv4.version;
     }
     @name(".set_malformed_outer_ipv4_packet") action set_malformed_outer_ipv4_packet(bit<8> drop_reason) {
+        @assert("if(traverse, !forward)"){}
         meta.ingress_metadata.drop_flag = 1w1;
         meta.ingress_metadata.drop_reason = drop_reason;
     }

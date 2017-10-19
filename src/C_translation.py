@@ -24,7 +24,7 @@ def run(node, rules):
     if rules:
         global forwardingRules
         forwardingRules = rules
-    returnString = "#define BITSLICE(x, a, b) ((x) >> (b)) & ((1 << ((a)-(b)+1)) - 1)\n#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint action_run;\n\n"
+    returnString = "#define BITSLICE(x, a, b) ((x) >> (b)) & ((1 << ((a)-(b)+1)) - 1)\n#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint assert_forward = 1;\nint action_run;\n\n"
     program = toC(node)
     returnString += globalDeclarations
     for declaration in forwardDeclarations:
@@ -169,7 +169,7 @@ def assertion(assertionString, nodeID):
         returnString += left[0]
         right = assertion(ifParameters[1], nodeID)
         returnString += right[0]
-        logicalExpression = left[1] + " && !(" + right[1] + ")"
+        logicalExpression = "!(" + left[1] + ") && " + right[1]
         errorMessage = "if expression " + ifExpression + " evaluated to false"
     elif "==" in assertionString:
         equalityParameters = assertionString.split("==")
@@ -205,18 +205,25 @@ def assertion(assertionString, nodeID):
         globalDeclarations += "\nint " + globalVarName + " = 0;\n"
         logicalExpression = globalVarName + " == 0"
         errorMessage = headerToEmit + " not emitted"
+    elif "forward" in assertionString:
+        if "!" == assertionString[0]:
+            logicalExpression = "assert_forward == 1"
+            errorMessage =  "packet not dropped"
+        else:
+            logicalExpression = "assert_forward == 0"
+            errorMessage =  "packet not forwarded"
     elif "traverse" in assertionString:
-        traverseParameter = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
-        globalVarName = "traverse" + traverseParameter +"_" + str(nodeID)
+        #traverseParameter = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
+        globalVarName = "traverse_" + str(nodeID)
         global globalDeclarations
         globalDeclarations += "int " + globalVarName + " = 0;"
         logicalExpression = globalVarName + " == 0"
         errorMessage = globalVarName + " not traversed"
-        if traverseParameter:
-            #TODO: add globalVarName + " = 1;" to the parameter location
-            pass
-        else:
-            returnString += globalVarName + " = 1;"
+        #if traverseParameter:
+        #    #TODO: add globalVarName + " = 1;" to the parameter location
+        #    pass
+        #else:
+        returnString += globalVarName + " = 1;"
     return (returnString, logicalExpression, errorMessage)
 
 def ArrayIndex(node):
@@ -378,6 +385,15 @@ def MethodCallExpression(node):
      #SetInvalid method
     elif hasattr(node.method, 'member') and node.method.member == "setInvalid":
         returnString += toC(node.method.expr) + ".isValid = 0;"
+    elif hasattr(node.method, 'path') and node.method.path.name == "random":
+        field = toC(node.arguments.vec[0])
+        returnString += "//random\n\t"
+        returnString += klee_make_symbolic(field)
+        lowerBound = toC(node.arguments.vec[1])
+        upperBound = toC(node.arguments.vec[2])
+        returnString += "\n\tklee_assume(" + field + " > " + lowerBound + " && " + field + " < " + upperBound + ");"
+    elif hasattr(node.method, 'path') and node.method.path.name == "digest":
+        pass
     else:
         returnString = toC(node.method) + "();"
     return returnString
@@ -521,15 +537,13 @@ def SwitchStatement(node):
     if node.expression.member == "action_run":
         returnString += toC(node.expression.expr) + "\n\t"
         defaultCase = None
-        openIf = 0
         for case in node.cases.vec:
             if case.label.Node_Type != "DefaultExpression":
                 returnString += "if(action_run == " + str(actionIDs[toC(case.label)]) + ") {\n\t\t " + toC(case) + "\n\t} else "
-                openIf += 1
             else:
-                defaultCase = case
+                defaultCase = toC(case)
         if defaultCase:
-            returnString += "{\n\t\t" +toC(case) + "\n\t}"
+            returnString += "{\n\t\t" + defaultCase + "\n\t}"
         else:
             returnString = returnString[:-6]
 
@@ -641,6 +655,9 @@ def Type_Parser(node):
     #return "<Type_Parser>" + str(node.Node_ID)
     return ""
 
+def dropPacketCode():
+    return "assert_forward = 0;\n\tend_assertions();\n\texit(0);"
+
 def ParserState(node):
     components = ""
     for v in node.components.vec:
@@ -651,7 +668,7 @@ def ParserState(node):
         if "\n" not in expression:
             expression += "();" #it is not a select, thus it is a direct parser state transition
     if node.name == "reject":
-        expression += "printf(\"Packet dropped\");\n\texit(0);"
+        expression += dropPacketCode()
     forwardDeclarations.add(node.name)
     parser = "void " + node.name + "() {\n" + components + "\t" + expression + "\n}\n\n"
     return parser
@@ -839,10 +856,17 @@ def bitsSizeToType(size):
     #    return "???"
 
 def klee_make_symbolic(var):
-    return "\tklee_make_symbolic(&" + var + ", sizeof(" + var + "), \"" + var + "\");\n"
+    returnString = ""
+    if "." in var:
+        returnString += "\tuint64_t tmp_symbolic;\n"
+        returnString += "\tklee_make_symbolic(&tmp_symbolic, sizeof(tmp_symbolic), \"tmp_symbolic\");\n\t"
+        returnString += var + " = tmp_symbolic;\n"
+    else:
+        returnString += "\tklee_make_symbolic(&" + var + ", sizeof(" + var + "), \"" + var + "\");\n"
+    return returnString
 
 # ---- V1 specific ----
 
 def mark_to_drop():
-    return "void mark_to_drop() {\n\tprintf(\"Packet dropped\\n\");\n\texit(0);\n}\n"
+    return "void mark_to_drop() {\n\t" + dropPacketCode() + "\n}\n"
 
