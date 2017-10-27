@@ -1384,10 +1384,12 @@ control process_vlan_decap(inout headers hdr, inout metadata meta, inout standar
     @name(".nop") action nop() {
     }
     @name(".remove_vlan_single_tagged") action remove_vlan_single_tagged() {
+        @assert("if(traverse, !emit(vlan_tag_[0]))?Failed property 1"){}
         hdr.ethernet.etherType = hdr.vlan_tag_[0].etherType;
         hdr.vlan_tag_[0].setInvalid();
     }
     @name(".remove_vlan_double_tagged") action remove_vlan_double_tagged() {
+        @assert("if(traverse, !emit(vlan_tag_[0]) && !emit(vlan_tag_[1]))?Failed property 2"){}
         hdr.ethernet.etherType = hdr.vlan_tag_[1].etherType;
         hdr.vlan_tag_[0].setInvalid();
         hdr.vlan_tag_[1].setInvalid();
@@ -1924,6 +1926,7 @@ control process_mac_rewrite(inout headers hdr, inout metadata meta, inout standa
         if (meta.egress_metadata.routed == 1w1) {
             l3_rewrite.apply();
             smac_rewrite.apply();
+            @assert("if(forward, traverse)?Failed property 3"){}
         }
     }
 }
@@ -2492,6 +2495,7 @@ control process_tunnel_encap(inout headers hdr, inout metadata meta, inout stand
         hdr.ipv6.dstAddr = ip;
     }
     @name(".inner_ipv4_udp_rewrite") action inner_ipv4_udp_rewrite() {
+        @assert("if(traverse, extract(hdr.ipv4) && extract(hdr.udp))?Failed property 4"){}
         hdr.inner_ipv4 = hdr.ipv4;
         hdr.inner_udp = hdr.udp;
         meta.egress_metadata.payload_length = hdr.ipv4.totalLen;
@@ -2500,6 +2504,7 @@ control process_tunnel_encap(inout headers hdr, inout metadata meta, inout stand
         meta.tunnel_metadata.inner_ip_proto = 8w4;
     }
     @name(".inner_ipv4_tcp_rewrite") action inner_ipv4_tcp_rewrite() {
+        @assert("if(traverse, extract(hdr.ipv4) && extract(hdr.tcp))?Failed property 5"){}
         hdr.inner_ipv4 = hdr.ipv4;
         hdr.inner_tcp = hdr.tcp;
         meta.egress_metadata.payload_length = hdr.ipv4.totalLen;
@@ -2508,6 +2513,7 @@ control process_tunnel_encap(inout headers hdr, inout metadata meta, inout stand
         meta.tunnel_metadata.inner_ip_proto = 8w4;
     }
     @name(".inner_ipv4_icmp_rewrite") action inner_ipv4_icmp_rewrite() {
+        @assert("if(traverse, extract(hdr.ipv4) && extract(hdr.icmp))?Failed property 6"){}
         hdr.inner_ipv4 = hdr.ipv4;
         hdr.inner_icmp = hdr.icmp;
         meta.egress_metadata.payload_length = hdr.ipv4.totalLen;
@@ -2516,12 +2522,14 @@ control process_tunnel_encap(inout headers hdr, inout metadata meta, inout stand
         meta.tunnel_metadata.inner_ip_proto = 8w4;
     }
     @name(".inner_ipv4_unknown_rewrite") action inner_ipv4_unknown_rewrite() {
+        @assert("if(traverse, extract(hdr.ipv4))?Failed property 7"){}
         hdr.inner_ipv4 = hdr.ipv4;
         meta.egress_metadata.payload_length = hdr.ipv4.totalLen;
         hdr.ipv4.setInvalid();
         meta.tunnel_metadata.inner_ip_proto = 8w4;
     }
     @name(".inner_ipv6_udp_rewrite") action inner_ipv6_udp_rewrite() {
+        @assert("if(traverse, extract(hdr.ipv6) && extract(hdr.udp))?Failed property 8"){}
         hdr.inner_ipv6 = hdr.ipv6;
         hdr.inner_udp = hdr.udp;
         meta.egress_metadata.payload_length = hdr.ipv6.payloadLen + 16w40;
@@ -2529,6 +2537,7 @@ control process_tunnel_encap(inout headers hdr, inout metadata meta, inout stand
         meta.tunnel_metadata.inner_ip_proto = 8w41;
     }
     @name(".inner_ipv6_tcp_rewrite") action inner_ipv6_tcp_rewrite() {
+        @assert("if(traverse, extract(hdr.ipv6) && extract(hdr.tcp))?Failed property 9"){}
         hdr.inner_ipv6 = hdr.ipv6;
         hdr.inner_tcp = hdr.tcp;
         meta.egress_metadata.payload_length = hdr.ipv6.payloadLen + 16w40;
@@ -2537,6 +2546,7 @@ control process_tunnel_encap(inout headers hdr, inout metadata meta, inout stand
         meta.tunnel_metadata.inner_ip_proto = 8w41;
     }
     @name(".inner_ipv6_icmp_rewrite") action inner_ipv6_icmp_rewrite() {
+        @assert("if(traverse, extract(hdr.ipv6) && extract(hdr.icmp))?Failed property 10"){}
         hdr.inner_ipv6 = hdr.ipv6;
         hdr.inner_icmp = hdr.icmp;
         meta.egress_metadata.payload_length = hdr.ipv6.payloadLen + 16w40;
@@ -2545,6 +2555,7 @@ control process_tunnel_encap(inout headers hdr, inout metadata meta, inout stand
         meta.tunnel_metadata.inner_ip_proto = 8w41;
     }
     @name(".inner_ipv6_unknown_rewrite") action inner_ipv6_unknown_rewrite() {
+        @assert("if(traverse, extract(hdr.ipv6))?Failed property 11"){}
         hdr.inner_ipv6 = hdr.ipv6;
         meta.egress_metadata.payload_length = hdr.ipv6.payloadLen + 16w40;
         hdr.ipv6.setInvalid();
@@ -3367,7 +3378,7 @@ control validate_outer_ipv4_header(inout headers hdr, inout metadata meta, inout
         meta.l3_metadata.lkp_ip_version = hdr.ipv4.version;
     }
     @name(".set_malformed_outer_ipv4_packet") action set_malformed_outer_ipv4_packet(bit<8> drop_reason) {
-        @assert("if(traverse, !forward)"){}
+        @assert("if(traverse, !forward)?Failed property 12"){}
         meta.ingress_metadata.drop_flag = 1w1;
         meta.ingress_metadata.drop_reason = drop_reason;
     }
@@ -3395,6 +3406,7 @@ control validate_outer_ipv6_header(inout headers hdr, inout metadata meta, inout
         meta.l3_metadata.lkp_ip_version = hdr.ipv6.version;
     }
     @name(".set_malformed_outer_ipv6_packet") action set_malformed_outer_ipv6_packet(bit<8> drop_reason) {
+        @assert("if(traverse, !forward)?Failed property 13"){}
         meta.ingress_metadata.drop_flag = 1w1;
         meta.ingress_metadata.drop_reason = drop_reason;
     }
@@ -4608,6 +4620,7 @@ control process_validate_packet(inout headers hdr, inout metadata meta, inout st
         meta.l2_metadata.bd_stats_idx = meta.l2_metadata.bd_stats_idx + 16w2;
     }
     @name(".set_malformed_packet") action set_malformed_packet(bit<8> drop_reason) {
+        @assert("if(traverse, !forward)?Failed property 14"){}
         meta.ingress_metadata.drop_flag = 1w1;
         meta.ingress_metadata.drop_reason = drop_reason;
     }
@@ -4832,6 +4845,7 @@ control process_ip_acl(inout headers hdr, inout metadata meta, inout standard_me
     @name(".nop") action nop() {
     }
     @name(".acl_deny") action acl_deny(bit<14> acl_stats_index, bit<16> acl_meter_index, bit<16> acl_copy_reason, bit<2> nat_mode, bit<3> ingress_cos, bit<8> tc, bit<2> color) {
+        @assert("if(traverse, !forward)?Failed property 15"){}
         meta.acl_metadata.acl_deny = 1w1;
         meta.acl_metadata.acl_stats_index = acl_stats_index;
         meta.meter_metadata.meter_index = acl_meter_index;
@@ -5252,6 +5266,7 @@ control process_urpf_bd(inout headers hdr, inout metadata meta, inout standard_m
     @name(".nop") action nop() {
     }
     @name(".urpf_bd_miss") action urpf_bd_miss() {
+        @assert("if(traverse, !forward)?Failed property 16"){}
         meta.l3_metadata.urpf_check_fail = 1w1;
     }
     @name(".urpf_bd") table urpf_bd {
@@ -5950,6 +5965,7 @@ control process_nexthop(inout headers hdr, inout metadata meta, inout standard_m
     @name(".nop") action nop() {
     }
     @name(".set_ecmp_nexthop_details") action set_ecmp_nexthop_details(bit<16> ifindex, bit<16> bd, bit<16> nhop_index, bit<1> tunnel) {
+        @assert("if(traverse, !constant(l3_metadata.nexthop_index))?Failed property 17"){}
         meta.ingress_metadata.egress_ifindex = ifindex;
         meta.l3_metadata.nexthop_index = nhop_index;
         meta.l3_metadata.same_bd_check = meta.ingress_metadata.bd ^ bd;

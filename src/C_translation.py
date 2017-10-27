@@ -20,6 +20,26 @@ finalAssertions = "void end_assertions(){\n"
 emitHeadersAssertions = []
 extractHeadersAssertions = []
 
+def remove_unecessary_extract_aux_vars(lines):
+    returnString = ""
+    global_vars = set()
+    for line in lines:
+        if "int extract_header_" in line:
+            header = line.split(" ")[1][15:]
+            if not (header in global_vars):
+                global_vars.add(header)
+                returnString += line + "\n"
+        elif "[POST]" in line:
+            header = line.split(" ")[0][22:]
+            if header in global_vars:
+                returnString += "\t" + line[7:] + "\n"
+        else:
+            returnString += line + "\n"
+    return returnString
+
+def post_processing(model_string):
+    return remove_unecessary_extract_aux_vars(model_string.split("\n"))
+
 def run(node, rules):
     if rules:
         global forwardingRules
@@ -152,25 +172,43 @@ def Annotations(node):
     returnString = ""
     for annotation in node.annotations.vec:
         if annotation.name == "assert":
-            assertionResults = assertion(annotation.expr.vec[0].value, annotation.expr.vec[0].Node_ID)
+            assert_string = annotation.expr.vec[0].value.split("?")
+            assertionResults = assertion(assert_string[0], annotation.expr.vec[0].Node_ID)
             returnString += assertionResults[0]
+            if assert_string[1] != "":
+                message = assert_string[1] + "\\n"
+            else:
+                message = assertionResults[2]
             global finalAssertions
-            finalAssertions += "\tif(" + assertionResults[1] + "){\n\t\tprintf(\"Assert error: " + assertionResults[2] + "\");\n\t}\n\n"
+            finalAssertions += "\tif(" + assertionResults[1] + "){\n\t\tprintf(\"Assert error: " + message + "\");\n\t}\n\n"
     return returnString
 
 def assertion(assertionString, nodeID):
     returnString = ""
     logicalExpression = ""
     errorMessage = ""
-    if "if(" == assertionString[:3]: #TODO: finish this
+    if "!" == assertionString[0]:
+        neg = assertion(assertionString[1:], nodeID)
+        returnString += neg[0]
+        logicalExpression = "!" + neg[1]
+        errorMessage = "not " + neg[2]
+    elif "if(" == assertionString[:3]: #TODO: finish this
         ifExpression = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
         ifParameters = re.split(r',\s*(?![^()]*\))', ifExpression)
         left = assertion(ifParameters[0], nodeID)
         returnString += left[0]
         right = assertion(ifParameters[1], nodeID)
         returnString += right[0]
-        logicalExpression = "!(" + left[1] + ") && " + right[1]
+        logicalExpression = "!(" + left[1] + ") && (" + right[1] + ")"
         errorMessage = "if expression " + ifExpression + " evaluated to false"
+    elif "&&" in assertionString:
+        andParameters = assertionString.split(" && ")
+        left = assertion(andParameters[0], nodeID)
+        right = assertion(andParameters[1], nodeID)
+        returnString += left[0]
+        returnString += right[0]
+        logicalExpression = "(" + left[1] + ") || (" + right[1] + ")"
+        errorMessage = left[1] + " and " + right[1]
     elif "==" in assertionString:
         equalityParameters = assertionString.split("==")
         left = equalityParameters[0]
@@ -189,34 +227,30 @@ def assertion(assertionString, nodeID):
         logicalExpression =  globalVarName + " != " + constantVariable
         errorMessage = constantVariable + " not constant"
         returnString += globalVarName + " = " + constantVariable + ";"
-    elif "extract_header" in assertionString: #TODO: assign variable to true when extract field in model
+    elif "extract" in assertionString: #TODO: assign variable to true when extract field in model
         headerToExtract = assertionString[assertionString.find("(")+1:assertionString.rfind(")")].replace(".", "_")
-        globalVarName = "extract_header_" + headerToExtract + "_" + str(nodeID)
-        extractHeadersAssertions.append(globalVarName)
+        globalVarName = "extract_header_" + headerToExtract
         global globalDeclarations
         globalDeclarations += "\nint " + globalVarName + " = 0;\n"
         logicalExpression =  globalVarName + " == 0"
         errorMessage = headerToExtract + " not extracted"
-    elif "emit_header" in assertionString:
+    elif "emit" in assertionString:
         headerToEmit = assertionString[assertionString.find("(")+1:assertionString.rfind(")")].replace(".", "_")
-        globalVarName = "emit_header_" + headerToEmit + "_" + str(nodeID)
-        emitHeadersAssertions.append(globalVarName)
+        headerToEmitNoHeaderStack = headerToEmit.replace("[", "").replace("]", "")
+        globalVarName = "emit_header_" + headerToEmitNoHeaderStack
+        emitHeadersAssertions.append(headerToEmit)
         global globalDeclarations
         globalDeclarations += "\nint " + globalVarName + " = 0;\n"
-        logicalExpression = globalVarName + " == 0"
+        logicalExpression = globalVarName + " == 1"
         errorMessage = headerToEmit + " not emitted"
     elif "forward" in assertionString:
-        if "!" == assertionString[0]:
-            logicalExpression = "assert_forward == 1"
-            errorMessage =  "packet not dropped"
-        else:
             logicalExpression = "assert_forward == 0"
             errorMessage =  "packet not forwarded"
     elif "traverse" in assertionString:
         #traverseParameter = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
         globalVarName = "traverse_" + str(nodeID)
         global globalDeclarations
-        globalDeclarations += "int " + globalVarName + " = 0;"
+        globalDeclarations += "int " + globalVarName + " = 0;\n"
         logicalExpression = globalVarName + " == 0"
         errorMessage = globalVarName + " not traversed"
         #if traverseParameter:
@@ -427,7 +461,8 @@ def P4Action(node):
     forwardDeclarations.add(node.name + "_" + str(node.Node_ID))
     if parameters != "":
         parameters = parameters[:-2]
-    return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "(" + parameters + ") {\n\t" + actionData + toC(node.body) + "\n}\n\n"
+    actionName = node.name + "_" + str(node.Node_ID)
+    return "// Action\nvoid " + actionName + "(" + parameters + ") {\n\t" + actionData + toC(node.body) + "\n}\n\n"
 
 def P4Table(node):
     tableIDs[node.name] = node.Node_ID
@@ -437,7 +472,8 @@ def P4Table(node):
     tableBody = toC(node.properties)
     if forwardingRules:
         tableBody = actionListWithRules(node)
-    return "//Table\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n" + tableBody + "\n}\n\n"
+    tableName = node.name + "_" + str(node.Node_ID)
+    return "//Table\nvoid " + tableName + "() {\n" + tableBody + "\n}\n\n"
 
 def ParameterList(node):
     returnString = ""
@@ -807,7 +843,8 @@ def emit(node):
         headerName = hdrName.split(".")[1]
     for emitAssertion in emitHeadersAssertions:
         if headerName in emitAssertion:
-            returnString += emitAssertion + " = 1;"
+            headerNameNoHeaderStack = emitAssertion.replace("[", "").replace("]", "")
+            returnString += "emit_header_" + headerNameNoHeaderStack + " = " + emitAssertion + ".isValid;\n\t"
 
     for header in headers:
         if header[0] == getHeaderType(headerName):
@@ -827,15 +864,14 @@ def emit(node):
 def extract(node):
     returnString = ""
     headerToExtract = toC(node.arguments.vec[0])
+    returnString += "//Extract " + headerToExtract + "\n\t"
     if headerToExtract.endswith(".next"): # parsing a header stack
         headerToExtract = headerToExtract[:-5]
         returnString += headerToExtract + "[" + headerToExtract + "_index]" + ".isValid = 1;\n\t"
         returnString += headerToExtract + "_index++;"
     else: 
-        returnString += headerToExtract + ".isValid = 1;"
-    for extractAssertion in extractHeadersAssertions: #FIXME:not working, assertion appears after parser
-        if headerToExtract in extractAssertion:
-            returnString += extractAssertion + " = 1;"
+        returnString += headerToExtract + ".isValid = 1;\n\t"
+        returnString += "[POST]extract_header_" + headerToExtract.replace(".", "_") + " = 1;"
     return returnString
 
 def cast(expr, toType):

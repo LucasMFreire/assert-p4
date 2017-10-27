@@ -13,4 +13,5 @@ if forwardingRulesProvided:
 else:
     forwardingRules = None
 
-print C_translation.run(Node.NodeFactory(program), forwardingRules)
+model = C_translation.run(Node.NodeFactory(program), forwardingRules)
+print C_translation.post_processing(model)
