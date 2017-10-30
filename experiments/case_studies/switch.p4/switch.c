@@ -7382,25 +7382,10 @@ uint8_t port_type;
 // Action
 void _set_ingress_port_properties_5402030() {
 	action_run = 5402030;
-	uint32_t if_label;
-	klee_make_symbolic(&if_label, sizeof(if_label), "if_label");
-uint8_t qos_group;
-	klee_make_symbolic(&qos_group, sizeof(qos_group), "qos_group");
-uint8_t tc_qos_group;
-	klee_make_symbolic(&tc_qos_group, sizeof(tc_qos_group), "tc_qos_group");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
 uint8_t trust_dscp;
 	klee_make_symbolic(&trust_dscp, sizeof(trust_dscp), "trust_dscp");
 uint8_t trust_pcp;
 	klee_make_symbolic(&trust_pcp, sizeof(trust_pcp), "trust_pcp");
-	meta.acl_metadata.if_label = if_label;
-	meta.qos_metadata.ingress_qos_group = qos_group;
-	meta.qos_metadata.tc_qos_group = tc_qos_group;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
 	meta.qos_metadata.trust_dscp = trust_dscp;
 	meta.qos_metadata.trust_pcp = trust_pcp;
 
@@ -7410,10 +7395,10 @@ uint8_t trust_pcp;
 // Action
 void _malformed_outer_ethernet_packet_5402198() {
 	action_run = 5402198;
-	uint8_t drop_reason;
-	klee_make_symbolic(&drop_reason, sizeof(drop_reason), "drop_reason");
+	
+	
 	meta.ingress_metadata.drop_flag = 1;
-	meta.ingress_metadata.drop_reason = drop_reason;
+	
 
 }
 
@@ -7548,11 +7533,11 @@ void _set_valid_outer_ipv4_packet_0_5402809() {
 // Action
 void _set_malformed_outer_ipv4_packet_0_5402843() {
 	action_run = 5402843;
-	uint8_t drop_reason;
-	klee_make_symbolic(&drop_reason, sizeof(drop_reason), "drop_reason");
+	
+	
 	traverse_5402860 = 1;
 	meta.ingress_metadata.drop_flag = 1;
-	meta.ingress_metadata.drop_reason = drop_reason;
+	
 
 }
 
@@ -7570,11 +7555,11 @@ void _set_valid_outer_ipv6_packet_0_5402956() {
 // Action
 void _set_malformed_outer_ipv6_packet_0_5402990() {
 	action_run = 5402990;
-	uint8_t drop_reason;
-	klee_make_symbolic(&drop_reason, sizeof(drop_reason), "drop_reason");
+	
+	
 	traverse_5403007 = 1;
 	meta.ingress_metadata.drop_flag = 1;
-	meta.ingress_metadata.drop_reason = drop_reason;
+	
 
 }
 
@@ -7729,9 +7714,6 @@ void _nop_39_5403884() {
 // Action
 void _set_ingress_tc_5403885() {
 	action_run = 5403885;
-	uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-	meta.qos_metadata.lkp_tc = tc;
 
 }
 
@@ -7739,9 +7721,6 @@ void _set_ingress_tc_5403885() {
 // Action
 void _set_ingress_tc_2_5403903() {
 	action_run = 5403903;
-	uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-	meta.qos_metadata.lkp_tc = tc;
 
 }
 
@@ -7749,9 +7728,9 @@ void _set_ingress_tc_2_5403903() {
 // Action
 void _set_ingress_color_5403916() {
 	action_run = 5403916;
-	uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
-	meta.meter_metadata.packet_color = color;
+	
+	
+	
 
 }
 
@@ -7759,9 +7738,9 @@ void _set_ingress_color_5403916() {
 // Action
 void _set_ingress_color_2_5403934() {
 	action_run = 5403934;
-	uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
-	meta.meter_metadata.packet_color = color;
+	
+	
+	
 
 }
 
@@ -7769,12 +7748,9 @@ void _set_ingress_color_2_5403934() {
 // Action
 void _set_ingress_tc_and_color_5403947() {
 	action_run = 5403947;
-	uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+
+	
+	
 
 }
 
@@ -7782,12 +7758,9 @@ uint8_t color;
 // Action
 void _set_ingress_tc_and_color_2_5403973() {
 	action_run = 5403973;
-	uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+
+	
+	
 
 }
 
@@ -8757,11 +8730,11 @@ void _set_broadcast_5409303() {
 // Action
 void _set_malformed_packet_5409330() {
 	action_run = 5409330;
-	uint8_t drop_reason;
-	klee_make_symbolic(&drop_reason, sizeof(drop_reason), "drop_reason");
+	
+	
 	traverse_5409347 = 1;
 	meta.ingress_metadata.drop_flag = 1;
-	meta.ingress_metadata.drop_reason = drop_reason;
+	
 
 }
 
@@ -8915,18 +8888,15 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_deny = 1;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.meter_metadata.meter_index = acl_meter_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -8944,17 +8914,14 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.meter_metadata.meter_index = acl_meter_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -8974,10 +8941,8 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_redirect = 1;
 	meta.acl_metadata.acl_nexthop = nexthop_index;
 	meta.acl_metadata.acl_nexthop_type = 0;
@@ -8986,8 +8951,7 @@ uint8_t color;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9007,10 +8971,8 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_redirect = 1;
 	meta.acl_metadata.acl_nexthop = ecmp_index;
 	meta.acl_metadata.acl_nexthop_type = 1;
@@ -9019,8 +8981,7 @@ uint8_t color;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9038,17 +8999,14 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.i2e_metadata.mirror_session_id = (uint32_t) session_id;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.meter_metadata.meter_index = acl_meter_index;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9080,10 +9038,8 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	traverse_5410603 = 1;
 	meta.acl_metadata.acl_deny = 1;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
@@ -9091,8 +9047,7 @@ uint8_t color;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9110,10 +9065,8 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	traverse_5410626 = 1;
 	meta.acl_metadata.acl_deny = 1;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
@@ -9121,8 +9074,7 @@ uint8_t color;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9140,17 +9092,14 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.meter_metadata.meter_index = acl_meter_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9168,17 +9117,14 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.meter_metadata.meter_index = acl_meter_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9198,10 +9144,8 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_redirect = 1;
 	meta.acl_metadata.acl_nexthop = nexthop_index;
 	meta.acl_metadata.acl_nexthop_type = 0;
@@ -9210,8 +9154,7 @@ uint8_t color;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9231,10 +9174,8 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_redirect = 1;
 	meta.acl_metadata.acl_nexthop = nexthop_index;
 	meta.acl_metadata.acl_nexthop_type = 0;
@@ -9243,8 +9184,7 @@ uint8_t color;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9264,10 +9204,8 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_redirect = 1;
 	meta.acl_metadata.acl_nexthop = ecmp_index;
 	meta.acl_metadata.acl_nexthop_type = 1;
@@ -9276,8 +9214,7 @@ uint8_t color;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9297,10 +9234,8 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
 	meta.acl_metadata.acl_redirect = 1;
 	meta.acl_metadata.acl_nexthop = ecmp_index;
 	meta.acl_metadata.acl_nexthop_type = 1;
@@ -9309,8 +9244,7 @@ uint8_t color;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
 
 }
 
@@ -9328,17 +9262,17 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.i2e_metadata.mirror_session_id = (uint32_t) session_id;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.meter_metadata.meter_index = acl_meter_index;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9356,17 +9290,17 @@ uint8_t nat_mode;
 	klee_make_symbolic(&nat_mode, sizeof(nat_mode), "nat_mode");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.i2e_metadata.mirror_session_id = (uint32_t) session_id;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.meter_metadata.meter_index = acl_meter_index;
 	meta.nat_metadata.ingress_nat_mode = nat_mode;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9387,16 +9321,16 @@ uint32_t acl_copy_reason;
 	klee_make_symbolic(&acl_copy_reason, sizeof(acl_copy_reason), "acl_copy_reason");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.acl_metadata.racl_deny = 1;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9410,15 +9344,15 @@ uint32_t acl_copy_reason;
 	klee_make_symbolic(&acl_copy_reason, sizeof(acl_copy_reason), "acl_copy_reason");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9434,18 +9368,18 @@ uint32_t acl_copy_reason;
 	klee_make_symbolic(&acl_copy_reason, sizeof(acl_copy_reason), "acl_copy_reason");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.acl_metadata.racl_redirect = 1;
 	meta.acl_metadata.racl_nexthop = nexthop_index;
 	meta.acl_metadata.racl_nexthop_type = 0;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9461,18 +9395,18 @@ uint32_t acl_copy_reason;
 	klee_make_symbolic(&acl_copy_reason, sizeof(acl_copy_reason), "acl_copy_reason");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.acl_metadata.racl_redirect = 1;
 	meta.acl_metadata.racl_nexthop = ecmp_index;
 	meta.acl_metadata.racl_nexthop_type = 1;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9594,16 +9528,16 @@ uint32_t acl_copy_reason;
 	klee_make_symbolic(&acl_copy_reason, sizeof(acl_copy_reason), "acl_copy_reason");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.acl_metadata.racl_deny = 1;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9617,15 +9551,15 @@ uint32_t acl_copy_reason;
 	klee_make_symbolic(&acl_copy_reason, sizeof(acl_copy_reason), "acl_copy_reason");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9641,18 +9575,18 @@ uint32_t acl_copy_reason;
 	klee_make_symbolic(&acl_copy_reason, sizeof(acl_copy_reason), "acl_copy_reason");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.acl_metadata.racl_redirect = 1;
 	meta.acl_metadata.racl_nexthop = nexthop_index;
 	meta.acl_metadata.racl_nexthop_type = 0;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -9668,18 +9602,18 @@ uint32_t acl_copy_reason;
 	klee_make_symbolic(&acl_copy_reason, sizeof(acl_copy_reason), "acl_copy_reason");
 uint8_t ingress_cos;
 	klee_make_symbolic(&ingress_cos, sizeof(ingress_cos), "ingress_cos");
-uint8_t tc;
-	klee_make_symbolic(&tc, sizeof(tc), "tc");
-uint8_t color;
-	klee_make_symbolic(&color, sizeof(color), "color");
+
+	
+
+	
 	meta.acl_metadata.racl_redirect = 1;
 	meta.acl_metadata.racl_nexthop = ecmp_index;
 	meta.acl_metadata.racl_nexthop_type = 1;
 	meta.acl_metadata.acl_stats_index = acl_stats_index;
 	meta.fabric_metadata.reason_code = acl_copy_reason;
 	meta.intrinsic_metadata.ingress_cos = ingress_cos;
-	meta.qos_metadata.lkp_tc = tc;
-	meta.meter_metadata.packet_color = color;
+	
+	
 
 }
 
@@ -10355,8 +10289,6 @@ void _set_multicast_flood_5416817() {
 void _set_multicast_drop_5416839() {
 	action_run = 5416839;
 		meta.ingress_metadata.drop_flag = 1;
-	meta.ingress_metadata.drop_reason = 44;
-
 }
 
 
@@ -10684,8 +10616,7 @@ void _drop_packet_0_5418536() {
 // Action
 void _drop_packet_with_reason_5418552() {
 	action_run = 5418552;
-	uint32_t drop_reason;
-	klee_make_symbolic(&drop_reason, sizeof(drop_reason), "drop_reason");
+	
 	mark_to_drop();
 
 }
@@ -10752,7 +10683,7 @@ void _validate_outer_ethernet_0_5402648() {
 	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
-		case 0: _malformed_outer_ethernet_packet_5402198(); break;
+		case 0: _malformed_outer_ethernet_packet_5402198(); break; 
 		case 1: _set_valid_outer_unicast_packet_untagged_5402222(); break;
 		case 2: _set_valid_outer_unicast_packet_single_tagged_5402247(); break;
 		case 3: _set_valid_outer_unicast_packet_double_tagged_5402287(); break;
