@@ -11,6 +11,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
     }
 
     action increase_instance() {
+	@assert("if(traverse, hdr.paxos.msgtype == Phase2A)"){}
         registerInstance.read(hdr.paxos.inst, 0);
         hdr.paxos.inst = hdr.paxos.inst + 1;
         registerInstance.write(0, hdr.paxos.inst);
@@ -22,6 +23,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         registerInstance.write(0, 0);
         // Do not need to forward this message
         meta.paxos_metadata.set_drop = 1;
+	@assert("if(traverse, !forward)"){}
     }
 
     table leader_tbl {

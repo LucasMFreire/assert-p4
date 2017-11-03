@@ -4,6 +4,7 @@
 #include<stdlib.h>
 
 int assert_forward = 1;
+int traverse_color_check = 0;
 int action_run;
 
 
@@ -31,6 +32,9 @@ void core2local_0_147245();
 void parse_stag();
 
 void end_assertions(){
+	if(traverse_color_check == 1 && hdr.ipv4.dstAddr == 1 && hdr.ipv4.srcAddr == 0 && assert_forward == 1){
+		printf("Assert error: src 0 sending packets to dst 1\n");
+	}
 }
 
 typedef struct {
@@ -224,7 +228,9 @@ void NoAction_1_147050() {
 // Action
 void NoAction_6_147051() {
 	action_run = 147051;
-	
+	if(meta.local_md.dst_port_color != meta.local_md.src_port_color){
+		printf("Assert error: ports of different colors communicating\n");
+	}
 }
 
 
@@ -353,6 +359,7 @@ void stag_forward_147369() {
 
 //Table
 void color_check_147424() {
+	traverse_color_check = 1;
 	// keys: meta.local_md.dst_port_color:exact, meta.local_md.src_port_color:exact
 	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
