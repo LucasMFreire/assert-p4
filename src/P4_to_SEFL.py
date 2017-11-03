@@ -12,7 +12,7 @@ f = open(dir_path + "/seflrunner_skeleton.scala", "r")
 contents = f.readlines()
 f.close()
 
-contents.insert(33, SEFL_translation.run(Node.NodeFactory(program)))
+contents.insert(25, SEFL_translation.run(Node.NodeFactory(program)))
 
 f = open("SEFLRunner.scala", "w")
 contents = "".join(contents)
