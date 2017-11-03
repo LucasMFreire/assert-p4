@@ -1,3 +1,4 @@
+
 cwd=$(pwd)
 now=$(date +"%T")
 mkdir $now
@@ -10,15 +11,19 @@ p4benchmark --feature pipeline --tables $1 --table-size 32
 
 if [ $2 = "sefl" ]; then
   python /home/$USER/Desktop/assert-p4/src/P4_to_SEFL.py file.json
-  sudo cp SEFLRunner.scala /home/$USER/Desktop/Symnet/src/main/scala/org/change/v2/runners/experiments/SEFLRunner.scala
+  cp SEFLRunner.scala /home/$USER/Desktop/Symnet/src/main/scala/org/change/v2/runners/experiments/SEFLRunner.scala
   STARTTIME=$(date +%s)
   cd /home/$USER/Desktop/Symnet
-  /usr/bin/time -o /home/$USER/Desktop/assert-p4/experiments/benchmark/results/sefl/$1_mem.txt sudo sbt sample -mem 3000 -J-Xmx3g
+  /usr/bin/time -o /home/$USER/Desktop/assert-p4/experiments/benchmark/results/sefl/$1_mem.txt sbt sample
 else
-  python /home/$USER/Desktop/assert-p4/src/P4_to_C.py file.json > benchmark_model.c
-  llvm-gcc -I ../../include -emit-llvm -c -g benchmark_model.c
+  rules=""
+  if [ $3 = "rules" ]; then
+    rules="output/commands.txt"
+  fi
+  python /home/$USER/Desktop/assert-p4/src/P4_to_C.py file.json $rules > benchmark_model.c
   STARTTIME=$(date +%s)
-  /usr/bin/time -o /home/$USER/Desktop/assert-p4/experiments/benchmark/results/c/$1_mem.txt klee --search=dfs --warnings-only-to-file --no-output benchmark_model.o
+  llvm-gcc -I ../../include -emit-llvm -c -g benchmark_model.c
+  klee --search=dfs --warnings-only-to-file --no-output benchmark_model.o
 fi
 
 ENDTIME=$(date +%s)

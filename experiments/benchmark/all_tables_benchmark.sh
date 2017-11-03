@@ -1,4 +1,4 @@
- for i in $(seq 1 30);
+for i in $(seq 1 30);
     do
-            bash benchmark_tables.sh $i sefl
+            bash benchmark_tables.sh $i c rules
     done
