@@ -412,7 +412,7 @@ def MethodCallExpression(node):
         returnString +=  "//Extern: " + toC(node.method)
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
-        returnString += "if(" + node.arguments.vec[0].path.name + " == 0) { printf(\"" + node.arguments.vec[1].member + "\"); exit(1); }"
+        returnString += "if(" + toC(node.arguments.vec[0]) + ") { printf(\"" + node.arguments.vec[1].member + "\"); exit(1); }"
      #SetValid method
     elif hasattr(node.method, 'member') and node.method.member == "setValid":
         returnString += toC(node.method.expr) + ".isValid = 1;"
