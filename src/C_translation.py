@@ -472,6 +472,8 @@ def P4Table(node):
     tableBody = toC(node.properties)
     if forwardingRules:
         tableBody = actionListWithRules(node)
+    global currentTableKeys
+    currentTableKeys = {}
     tableName = node.name + "_" + str(node.Node_ID)
     return "//Table\nvoid " + tableName + "() {\n" + tableBody + "\n}\n\n"
 
