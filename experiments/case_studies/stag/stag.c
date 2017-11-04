@@ -29,7 +29,6 @@ void reject();
 void parse_ipv4();
 void NoAction_0_136741();
 void parse_stag();
-void end_assertions();
 
 typedef struct {
 	uint32_t ingress_port : 9;
@@ -125,6 +124,12 @@ headers hdr;
 metadata meta;
 standard_metadata_t standard_metadata;
 
+void end_assertions(){
+	if(traverse_color_check && standard_metadata_ingress_port_eq_1_137028 && hdr_ipv4_dstAddr_eq_167772162_137028 && assert_forward){
+		printf("Assert error: if expression standard_metadata.ingress_port == 1 && hdr.ipv4.dstAddr == 167772162, !forward evaluated to false\n");
+	}
+
+}
 
 void start() {
 	//Extract hdr.ethernet
@@ -169,7 +174,7 @@ void parse_stag() {
 
 
 void accept() {
-	
+
 }
 
 
@@ -191,12 +196,12 @@ void ParserImpl() {
 //Control
 
 void ingress() {
-//	if((hdr.stag.isValid != 1)) {
-	get_source_color_136787();
-//}
+	if((hdr.stag.isValid != 1)) {
+		get_source_color_136787();
+	}
 	forward_136962();
 	if(action_run == 136835) {
-		 	color_check_137023();
+		color_check_137023();
 
 	}
 }
@@ -204,28 +209,28 @@ void ingress() {
 // Action
 void NoAction_0_136741() {
 	action_run = 136741;
-	
+
 }
 
 
 // Action
 void NoAction_1_136751() {
 	action_run = 136751;
-	
+
 }
 
 
 // Action
 void NoAction_6_136752() {
 	action_run = 136752;
-	
+
 }
 
 
 // Action
 void drop_0_136753() {
 	action_run = 136753;
-		mark_to_drop();
+	mark_to_drop();
 
 }
 
@@ -233,7 +238,7 @@ void drop_0_136753() {
 // Action
 void set_source_color_0_136769(uint8_t color) {
 	action_run = 136769;
-		meta.local_md.src_port_color = color;
+	meta.local_md.src_port_color = color;
 
 }
 
@@ -241,7 +246,7 @@ void set_source_color_0_136769(uint8_t color) {
 // Action
 void set_local_dest_0_136835(uint32_t egr_port, uint8_t color) {
 	action_run = 136835;
-		standard_metadata.egress_spec = egr_port;
+	standard_metadata.egress_spec = egr_port;
 	meta.local_md.dst_port_color = color;
 	hdr.stag.isValid = 0;
 
@@ -314,7 +319,7 @@ void egress() {
 // Action
 void NoAction_7_137142() {
 	action_run = 137142;
-	
+
 }
 
 
@@ -335,14 +340,14 @@ void place_holder_table_137143() {
 //Control
 
 void computeChecksum() {
-	
+
 }
 
 
 //Control
 
 void verifyChecksum() {
-	
+
 }
 
 
@@ -350,22 +355,12 @@ void verifyChecksum() {
 
 void DeparserImpl() {
 	//Emit hdr.ethernet
-	
-	//Emit hdr.ipv4
-	
-	//Emit hdr.ipv4_option
-	
-	//Emit hdr.stag
-	
-}
 
-void end_assertions(){
-        if(traverse_color_check && standard_metadata_ingress_port_eq_1_137028 && hdr_ipv4_dstAddr_eq_167772162_137028 && assert_forward){
-                printf("Assert error: if expression standard_metadata.ingress_port == 1 && hdr.ipv4.dstAddr == 167772162, !forward evaluated to false\n");
-                if(meta.local_md.dst_port_color != 1) printf("WTF1\n");
-                if(meta.local_md.src_port_color != 0) printf("WTF2\n");
-		if(standard_metadata.ingress_port != 1) printf("WTF3\n");
-        }
+	//Emit hdr.ipv4
+
+	//Emit hdr.ipv4_option
+
+	//Emit hdr.stag
 
 }
 
