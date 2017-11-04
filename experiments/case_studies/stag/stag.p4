@@ -157,6 +157,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
       default_action = NoAction;
     }    
 
+    @assert("if(standard_metadata.ingress_port == 1 && hdr.ipv4.dstAddr == 167772162, !forward)")
     table color_check {
       key = {
         meta.local_md.dst_port_color: exact;
