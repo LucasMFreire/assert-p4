@@ -125,13 +125,13 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
       key = {standard_metadata.ingress_port : exact;}
       actions = {set_source_color;}
     }
-    action core2local(bit<9> egr_port, bit<8> color){
+    action set_local_dest(bit<9> egr_port, bit<8> color){
       standard_metadata.egress_spec = egr_port;
       meta.local_md.dst_port_color = color;
       hdr.stag.setInvalid();
     } 
 
-    action local2core(bit<9> egr_port){
+    action set_remote_dest(bit<9> egr_port){
       standard_metadata.egress_spec = egr_port;
       // configure hdr.ipv4.option_stag
       hdr.ipv4_option.setValid();
@@ -146,15 +146,15 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
       hdr.stag.source_color = meta.local_md.src_port_color;
     }
 
-    action core2core(bit<9> egr_port){
+    action core_pass_through(bit<9> egr_port){
       standard_metadata.egress_spec = egr_port;
     }
 
-    table stag_forward {
+    table forward {
       key = {hdr.ipv4.dstAddr: ternary;}
-      actions = { core2local; local2core; core2core; drop;}
+      actions = { set_local_dest; set_remote_dest; core_pass_through; NoAction;}
       size = 1024;
-      default_action = drop;
+      default_action = NoAction;
     }    
 
     table color_check {
@@ -172,8 +172,8 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
           get_source_color.apply(); // register src port color 
         }
 
-        switch(stag_forward.apply().action_run){
-          core2local: { color_check.apply(); }
+        switch(forward.apply().action_run){
+          set_local_dest: { color_check.apply(); }
 	}
     }
 }
