@@ -1,0 +1,1 @@
+table_add ip_acl acl_deny_0  _ _ _ _ _ 167772161 _ _ _ _ _ _ =>
