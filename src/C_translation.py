@@ -1,3 +1,4 @@
+import re
 
 headers = []
 structFieldsHeaderTypes = {} #structField, structFieldType
@@ -11,28 +12,62 @@ tableIDs = {} #tableName, nodeID
 declarationTypes = {} #instanceName, instanceType
 forwardDeclarations = set()
 package = ""
+currentTable = "" 
+forwardingRules = {}
+currentTableKeys = {} #keyName, (exact, lpm or ternary)
+globalDeclarations = ""
+finalAssertions = "void end_assertions(){\n"
+emitHeadersAssertions = []
+extractHeadersAssertions = []
 
-def run(node):
-    returnString = "#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint action_run;\n\n"
+def remove_unecessary_extract_aux_vars(lines):
+    returnString = ""
+    global_vars = set()
+    for line in lines:
+        if "int extract_header_" in line:
+            header = line.split(" ")[1][15:]
+            if not (header in global_vars):
+                global_vars.add(header)
+                returnString += line + "\n"
+        elif "[POST]" in line:
+            header = line.split(" ")[0][22:]
+            if header in global_vars:
+                returnString += "\t" + line[7:] + "\n"
+        else:
+            returnString += line + "\n"
+    return returnString
+
+def post_processing(model_string):
+    return remove_unecessary_extract_aux_vars(model_string.split("\n"))
+
+def run(node, rules):
+    if rules:
+        global forwardingRules
+        forwardingRules = rules
+    returnString = "#define BITSLICE(x, a, b) ((x) >> (b)) & ((1 << ((a)-(b)+1)) - 1)\n#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint assert_forward = 1;\nint action_run;\n\n"
     program = toC(node)
+    returnString += globalDeclarations
     for declaration in forwardDeclarations:
-        returnString += "void " + declaration + "();\n"
-    returnString += "\n" + program 
+        returnString += "\nvoid " + declaration + "();"
+    returnString += "\n\n" + finalAssertions + "}\n\n" + program
     return returnString
     
 
 def toC(node):
     #print str(node.Node_ID) + ": " + node.Node_Type
+    # test for annotations
+    returnString = ""
+    if hasattr(node, "annotations"):
+        returnString += Annotations(node.annotations)
     if 'Vector' in node.Node_Type:
-        returnString = ""
         for v in node.vec:
             #returnString += "<<" + str(v.Node_ID) + ">>"
             nodeString = toC(v)
             if nodeString != "":
                 returnString += nodeString + "\n"
-        return returnString
     else:
-        return globals()[node.Node_Type](node) #calls corresponding type function according to node type
+        returnString += globals()[node.Node_Type](node) #calls corresponding type function according to node type
+    return returnString
 
 ########### TYPE FUNCTIONS ###########
 
@@ -62,6 +97,9 @@ def P4Control(node):
     returnString += tables
     return returnString
 
+def Cmpl(node):
+    return "~" + toC(node.expr) 
+
 def BlockStatement(node):
     returnString = ""
     for v in node.components.vec:
@@ -71,16 +109,14 @@ def BlockStatement(node):
     return returnString
 
 def BAnd(node):
-    #return "<BAnd>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " & " + toC(node.right)
 
 def BOr(node):
-    #return "<BOr>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " | " + toC(node.right)
 
 def BXor(node):
     #return "<BXor>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " ^ " + toC(node.right)
 
 def Cast(node):
     return cast(node.expr, node.destType)
@@ -89,20 +125,19 @@ def Geq(node):
     return toC(node.left) + " >= " +  toC(node.right)
 
 def Leq(node):
-    #return "<Leq>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " <= " +  toC(node.right)
 
 def LAnd(node):
-    #return "<LAnd>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " && " + toC(node.right)
 
 def LOr(node):
-    #return "<LOr>" + str(node.Node_ID)
-    return ""
+    return toC(node.left) + " || " + toC(node.right)
 
 def Slice(node):
-    #return "<Slice>" + str(node.Node_ID)
-    return ""
+    value = toC(node.e0)
+    m = toC(node.e1)
+    l = toC(node.e2)
+    return "BITSLICE("+ value + ", " + m + ", " + l + ")"
 
 def Shl(node):
     return toC(node.left) + " << " +  toC(node.right)
@@ -114,23 +149,10 @@ def Mul(node):
     return str(toC(node.left)) + " * " + str(toC(node.right))
 
 def ActionList(node):
-    #assuming every action will be forked
-    returnString = "\tint symbol;\n" + klee_make_symbolic("symbol")
-    returnString += "\tswitch(symbol) {\n"
-    for idx,action in enumerate(node.actionList.vec):
-        if idx == len(node.actionList.vec) - 1:
-            returnString += "\t\tdefault: "
-        else:
-            returnString += "\t\tcase " + str(idx) + ": "
-        if action.expression.Node_Type == "PathExpression":
-            returnString += action.expression.path.name + "_" + str(actionIDs[action.expression.path.name]) + "(); "
-        elif action.expression.Node_Type == "MethodCallExpression":
-            returnString += action.expression.method.path.name + "_" + str(actionIDs[action.expression.method.path.name]) + "(); "
-        else:
-            returnString += "ERROR:UNKNOWN ACTION LIST TYPE"
-        returnString += "break;\n"
-    returnString += "\t}"
-    return returnString
+    if not forwardingRules:
+        return actionListNoRules(node)
+    else:
+        return ""
 
 def ActionListElement(node):
     #return "<ActionListElement>" + str(node.Node_ID) 
@@ -147,11 +169,99 @@ def Annotation(node):
     return ""
 
 def Annotations(node):
-    #return "<Annotations>" + str(node.Node_ID) 
-    return ""
+    returnString = ""
+    for annotation in node.annotations.vec:
+        if annotation.name == "assert":
+            assert_string = annotation.expr.vec[0].value.split("?")
+            assertionResults = assertion(assert_string[0], annotation.expr.vec[0].Node_ID)
+            returnString += assertionResults[0]
+            if assert_string[1] != "":
+                message = assert_string[1] + "\\n"
+            else:
+                message = assertionResults[2]
+            global finalAssertions
+            finalAssertions += "\tif(" + assertionResults[1] + "){\n\t\tprintf(\"Assert error: " + message + "\");\n\t}\n\n"
+    return returnString
+
+def assertion(assertionString, nodeID):
+    returnString = ""
+    logicalExpression = ""
+    errorMessage = ""
+    if "!" == assertionString[0]:
+        neg = assertion(assertionString[1:], nodeID)
+        returnString += neg[0]
+        logicalExpression = "!" + neg[1]
+        errorMessage = "not " + neg[2]
+    elif "if(" == assertionString[:3]: #TODO: finish this
+        ifExpression = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
+        ifParameters = re.split(r',\s*(?![^()]*\))', ifExpression)
+        left = assertion(ifParameters[0], nodeID)
+        returnString += left[0]
+        right = assertion(ifParameters[1], nodeID)
+        returnString += right[0]
+        logicalExpression = "!(" + left[1] + ") && (" + right[1] + ")"
+        errorMessage = "if expression " + ifExpression + " evaluated to false"
+    elif "&&" in assertionString:
+        andParameters = assertionString.split(" && ")
+        left = assertion(andParameters[0], nodeID)
+        right = assertion(andParameters[1], nodeID)
+        returnString += left[0]
+        returnString += right[0]
+        logicalExpression = "(" + left[1] + ") || (" + right[1] + ")"
+        errorMessage = left[1] + " and " + right[1]
+    elif "==" in assertionString:
+        equalityParameters = assertionString.split("==")
+        left = equalityParameters[0]
+        right = equalityParameters[1]
+        globalVarName =  left.replace(".", "_") + "_==_" + right.replace(".", "_") + "_" + str(nodeID)
+        global globalDeclarations
+        globalDeclarations += "\n int " + globalVarName + ";\n"
+        logicalExpression = globalVarName
+        returnString += globalVarName + "= (" + left + " == " + right + ");"
+    elif "constant" in assertionString:
+        constantVariable = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
+        globalVarName = "constant_" + constantVariable.replace(".", "_") + "_" + str(nodeID)
+        constantType = "??" #TODO: get proper field type
+        global globalDeclarations
+        globalDeclarations += "\n" + constantType + " " + globalVarName + ";\n"
+        logicalExpression =  globalVarName + " != " + constantVariable
+        errorMessage = constantVariable + " not constant"
+        returnString += globalVarName + " = " + constantVariable + ";"
+    elif "extract" in assertionString: #TODO: assign variable to true when extract field in model
+        headerToExtract = assertionString[assertionString.find("(")+1:assertionString.rfind(")")].replace(".", "_")
+        globalVarName = "extract_header_" + headerToExtract
+        global globalDeclarations
+        globalDeclarations += "\nint " + globalVarName + " = 0;\n"
+        logicalExpression =  globalVarName + " == 0"
+        errorMessage = headerToExtract + " not extracted"
+    elif "emit" in assertionString:
+        headerToEmit = assertionString[assertionString.find("(")+1:assertionString.rfind(")")].replace(".", "_")
+        headerToEmitNoHeaderStack = headerToEmit.replace("[", "").replace("]", "")
+        globalVarName = "emit_header_" + headerToEmitNoHeaderStack
+        emitHeadersAssertions.append(headerToEmit)
+        global globalDeclarations
+        globalDeclarations += "\nint " + globalVarName + " = 0;\n"
+        logicalExpression = globalVarName + " == 1"
+        errorMessage = headerToEmit + " not emitted"
+    elif "forward" in assertionString:
+            logicalExpression = "assert_forward == 0"
+            errorMessage =  "packet not forwarded"
+    elif "traverse" in assertionString:
+        #traverseParameter = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
+        globalVarName = "traverse_" + str(nodeID)
+        global globalDeclarations
+        globalDeclarations += "int " + globalVarName + " = 0;\n"
+        logicalExpression = globalVarName + " == 0"
+        errorMessage = globalVarName + " not traversed"
+        #if traverseParameter:
+        #    #TODO: add globalVarName + " = 1;" to the parameter location
+        #    pass
+        #else:
+        returnString += globalVarName + " = 1;"
+    return (returnString, logicalExpression, errorMessage)
 
 def ArrayIndex(node):
-    return toC(node.left) + "_" + str(node.right.value)
+    return toC(node.left) + "[" + str(node.right.value) + "]"
 
 def AssignmentStatement(node):
     if isExternal(node.right):
@@ -180,12 +290,12 @@ def Declaration_Instance(node):
             ingress = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
             egress = node.arguments.vec[3].type.path.name if hasattr(node.arguments.vec[3].type, "path") else node.arguments.vec[3].type.name
             deparser = node.arguments.vec[5].type.path.name if hasattr(node.arguments.vec[5].type, "path") else node.arguments.vec[5].type.name
-            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + egress + "();\n\t" + deparser +  "();\n\treturn 0;\n}\n"
+            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + egress + "();\n\t" + deparser +  "();\n\tend_assertions();\n\treturn 0;\n}\n"
         elif package == "VSS":
             parser = node.arguments.vec[0].type.path.name if hasattr(node.arguments.vec[0].type, "path") else node.arguments.vec[0].type.name
             ingress = node.arguments.vec[1].type.path.name if hasattr(node.arguments.vec[1].type, "path") else node.arguments.vec[1].type.name
             deparser = node.arguments.vec[2].type.path.name if hasattr(node.arguments.vec[2].type, "path") else node.arguments.vec[2].type.name
-            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + deparser + "();\n\treturn 0;\n}\n"
+            returnString += "int main() {\n\t" +  parser + "();\n\t" + ingress + "();\n\t" + deparser + "();\n\tend_assertions();\n\treturn 0;\n}\n"
     elif hasattr(node.type, "path"):
         declarationTypes[node.name] = node.type.path.name
     return returnString        
@@ -221,7 +331,10 @@ def IfStatement(node):
 def Key(node):
     returnString = "\t// keys: "
     for key in node.keyElements.vec:
-            returnString += toC(key.expression) + ", "
+        keyName = toC(key.expression)
+        matchType = toC(key.matchType)
+        currentTableKeys[keyName] = matchType
+        returnString += keyName +  ":" + matchType + ", "
     return returnString[:-2]
 
 def LNot(node):
@@ -229,7 +342,11 @@ def LNot(node):
 
 def Member(node):
     if node.member != 'apply':
-        return toC(node.expr) + "." + node.member
+        if node.member == "last":
+            nodeName = toC(node.expr)
+            return nodeName + "[" + nodeName + "_index - 1]"
+        else:
+            return toC(node.expr) + "." + node.member
     else:
         nodeName = toC(node.expr)
         if nodeName in tableIDs.keys():
@@ -245,12 +362,28 @@ def Method(node):
     else:
         return toC(node.type)
 
+def generatePushFront(node):
+    returnString = ""
+    count = toC(node.arguments.vec[0])
+    hdr = toC(node.method)[:-11]
+    returnString += "//push_front(" + count + ")\n"
+    returnString += "\tint header_stack_size = sizeof(" + hdr + ")/sizeof(" + hdr + "[0]);\n\t"
+    returnString += "int i;\n\t"
+    returnString += "for (i = header_stack_size - 1; i >= 0; i -= 1) {\n\t\t"
+    returnString += "if (i >= " + count + ") {\n\t\t\t"
+    returnString += hdr + "[i] = " + hdr + "[i-" + count + "];\n\t\t"
+    returnString += "} else {\n\t\t"
+    returnString += hdr + "[i].isValid = 0;\n\t}\n}\n\t"
+    returnString += hdr + "_index = " + hdr + "_index + " + count + ";\n\t"
+    returnString += "if (" + hdr + "_index > header_stack_size) " + hdr + "_index = header_stack_size;\n"
+    return returnString
+
 def MethodCallExpression(node):
     returnString = ""
-    # extract method
-    if hasattr(node.method, 'member') and node.method.member == "extract":
+    if hasattr(node.method, 'member') and node.method.member == "push_front":
+        returnString += generatePushFront(node)
+    elif hasattr(node.method, 'member') and node.method.member == "extract":
         returnString += extract(node)
-    # emit method
     elif hasattr(node.method, 'member') and node.method.member == "emit":
         returnString += emit(node)
      # execute meter, TODO: separate this into an 'extern methods' method
@@ -279,13 +412,22 @@ def MethodCallExpression(node):
         returnString +=  "//Extern: " + toC(node.method)
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
-        returnString += "if(" + node.arguments.vec[0].path.name + " == 0) { printf(\"" + node.arguments.vec[1].member + "\"); exit(1); }"
+        returnString += "if(" + toC(node.arguments.vec[0]) + ") { printf(\"" + node.arguments.vec[1].member + "\"); exit(1); }"
      #SetValid method
     elif hasattr(node.method, 'member') and node.method.member == "setValid":
         returnString += toC(node.method.expr) + ".isValid = 1;"
      #SetInvalid method
     elif hasattr(node.method, 'member') and node.method.member == "setInvalid":
         returnString += toC(node.method.expr) + ".isValid = 0;"
+    elif hasattr(node.method, 'path') and node.method.path.name == "random":
+        field = toC(node.arguments.vec[0])
+        returnString += "//random\n\t"
+        returnString += klee_make_symbolic(field)
+        lowerBound = toC(node.arguments.vec[1])
+        upperBound = toC(node.arguments.vec[2])
+        returnString += "\n\tklee_assume(" + field + " > " + lowerBound + " && " + field + " < " + upperBound + ");"
+    elif hasattr(node.method, 'path') and node.method.path.name == "digest":
+        pass
     else:
         returnString = toC(node.method) + "();"
     return returnString
@@ -300,20 +442,40 @@ def NameMapProperty(node):
 def P4Action(node):
     actionIDs[node.name] = node.Node_ID
     actionData = "action_run = " + str(node.Node_ID) + ";\n\t"
+    parameters = ""
     for param in node.parameters.parameters.vec:
         if param.direction == "":
-            if param.type.Node_Type == "Type_Bits":
-                actionData += bitsSizeToType(param.type.size) + " " + param.name + ";\n"
+            if forwardingRules:
+                parameter = ""
+                if param.type.Node_Type == "Type_Bits":
+                    parameter = bitsSizeToType(param.type.size) + " " + param.name
+                else:
+                    parameter = toC(param.type) + " " + param.name 
+                parameters += parameter + ", "
             else:
-                actionData += toC(param.type) + " " + param.name + ";\n"
-            actionData += klee_make_symbolic(param.name)
+                if param.type.Node_Type == "Type_Bits":
+                    actionData += bitsSizeToType(param.type.size) + " " + param.name + ";\n"
+                else:
+                    actionData += toC(param.type) + " " + param.name + ";\n"
+                actionData += klee_make_symbolic(param.name)
     forwardDeclarations.add(node.name + "_" + str(node.Node_ID))
-    return "// Action\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n\t" + actionData + toC(node.body) + "\n}\n\n"
+    if parameters != "":
+        parameters = parameters[:-2]
+    actionName = node.name + "_" + str(node.Node_ID)
+    return "// Action\nvoid " + actionName + "(" + parameters + ") {\n\t" + actionData + toC(node.body) + "\n}\n\n"
 
 def P4Table(node):
     tableIDs[node.name] = node.Node_ID
+    global currentTable
+    currentTable = node.name
     forwardDeclarations.add(node.name + "_" + str(node.Node_ID))
-    return "//Table\nvoid " + node.name + "_" + str(node.Node_ID) + "() {\n" + toC(node.properties) + "}\n\n"
+    tableBody = toC(node.properties)
+    if forwardingRules:
+        tableBody = actionListWithRules(node)
+    global currentTableKeys
+    currentTableKeys = {}
+    tableName = node.name + "_" + str(node.Node_ID)
+    return "//Table\nvoid " + tableName + "() {\n" + tableBody + "\n}\n\n"
 
 def ParameterList(node):
     returnString = ""
@@ -334,6 +496,8 @@ def Property(node):
         return "\t// size " + toC(node.value)
     elif node.name == "actions":
         return toC(node.value)
+    elif node.name == "key":
+        return toC(node.value)
     else:
         return ""
 
@@ -342,8 +506,7 @@ def SelectExpression(node):
     exp = []
     for expression in expressions:
         if expression.Node_Type == 'Slice':
-            #TODO: slice bit string currently not supported #bitop
-            return ""
+            exp.append(Slice(expression))
         elif expression.Node_Type == 'Member':
             exp.append(toC(expression.expr) + "." + expression.member)
         elif  expression.Node_Type == "MethodCallStatement":
@@ -355,42 +518,29 @@ def SelectExpression(node):
              exp.append(toC(expression.path))
 
     cases = node.selectCases.vec
-    returnString = ""
-    multipleMatches = (cases[0].keyset.Node_Type == "ListExpression")
-    if multipleMatches:
-        returnString += selectMultiple(node, cases, exp)
-    else:
-        returnString += selectSingle(node, cases, exp)
+    returnString = select(cases, exp)
     return returnString
 
-def selectSingle(node, cases, exp):
-    returnString = "switch(" + str(exp[0]) + "){\n"
-    for case in cases:
-        if case.keyset.Node_Type == 'Mask':
-            #todo: fix mask #bitop
-            returnString = "//TODO: MASK\n"
-        elif case.keyset.Node_Type == 'DefaultExpression':
-            returnString += "\t\tdefault:\t" + case.state.path.name + "(); break;\n"
-        elif case.keyset.Node_Type == 'Constant':
-            returnString += "\t\tcase " + str(case.keyset.value) + ":\t" + case.state.path.name + "(); break;\n"
-    returnString += "\t}"
-    return returnString
-
-def selectMultiple(node, cases, exp):
+def select(cases, exp):
     returnString = ""
     for case in cases:
-        if case.keyset.Node_Type == "ListExpression":
-            fullExpression = ""
-            for idx,e in enumerate(exp):
-                if case.keyset.components.vec[idx].Node_Type == "Mask":
-                    a = toC(case.keyset.components.vec[idx].left)
-                    b = toC(case.keyset.components.vec[idx].right)
-                    fullExpression += "((" + str(e) + " & " + b + ") == (" + a + " & " + b + ")) && "
-                else:
-                    fullExpression += "(" + str(e) + " == " + str(case.keyset.components.vec[idx].value) + ") && "
-            returnString += "if(" + fullExpression[:-4] + ") {\n\t\t" + case.state.path.name + "();\n\t} else "
-        else:
-            returnString += "select with multiple parameters: unknown node type"
+        fullExpression = ""
+        for idx,e in enumerate(exp):
+            #get apropriate case depending if select has multiple arguments or not
+            if hasattr(case.keyset, 'components'):
+                node = case.keyset.components.vec[idx]
+            else:
+                node = case.keyset
+
+            if node.Node_Type == "Mask":
+                a = toC(node.left)
+                b = toC(node.right)
+                fullExpression += "((" + str(e) + " & " + b + ") == (" + a + " & " + b + ")) && "
+            elif node.Node_Type == 'Constant':
+                fullExpression += "(" + str(e) + " == " + str(node.value) + ") && "
+        if fullExpression != "":
+            returnString += "if(" + fullExpression[:-4] + ")"
+        returnString += "{\n\t\t" + case.state.path.name + "();\n\t} else "
     return returnString[:-6]
 
 def StringLiteral(node):
@@ -411,6 +561,9 @@ def StructField(node):
         returnString += "\tint " + node.name + "_index;\n"
         returnString += "\t" + structFieldsHeaderTypes[node.name] + " " + node.name + "[" + str(node.type.size.value) + "];"
     elif node.type.Node_Type == "Type_Bits":
+        #TODO: model fields with more than 64 bits properly
+        if node.type.size > 64:
+            node.type.size = 64
         returnString += "\t" + bitsSizeToType(node.type.size) + " " + node.name + " : " + str(node.type.size) + ";"
     return returnString
 
@@ -420,22 +573,17 @@ def SwitchCase(node):
 def SwitchStatement(node):
     returnString = ""
     if node.expression.member == "action_run":
-        returnString += toC(node.expression.expr) + ", \n\t"
+        returnString += toC(node.expression.expr) + "\n\t"
         defaultCase = None
-        openIf = 0
         for case in node.cases.vec:
             if case.label.Node_Type != "DefaultExpression":
-                returnString += "If(Constrain(\"action_run\", :==:(" + str(actionIDs[toC(case.label)]) + ")), " + toC(case) + ", "
-                openIf += 1
+                returnString += "if(action_run == " + str(actionIDs[toC(case.label)]) + ") {\n\t\t " + toC(case) + "\n\t} else "
             else:
-                defaultCase = case
+                defaultCase = toC(case)
         if defaultCase:
-            returnString += toC(case)
+            returnString += "{\n\t\t" + defaultCase + "\n\t}"
         else:
-            returnString = returnString[:-2]
-        for i in range(0, openIf):
-            returnString += ")"
-
+            returnString = returnString[:-6]
 
     else:
         switchCases = toC(node.cases).replace("\n", ",")
@@ -517,6 +665,9 @@ def Type_Header(node):
     returnString = "typedef struct {\n\tuint8_t isValid : 1;\n"
     for field in node.fields.vec:
         if field.type.Node_Type == "Type_Bits":
+            #TODO: model fields with more than 64 bits properly
+            if field.type.size > 64:
+                field.type.size = 64
             returnString += "\t" + bitsSizeToType(field.type.size) + " " + field.name + " : " + str(field.type.size) + ";\n"
         else:
             typeName = toC(field.type)
@@ -542,6 +693,9 @@ def Type_Parser(node):
     #return "<Type_Parser>" + str(node.Node_ID)
     return ""
 
+def dropPacketCode():
+    return "assert_forward = 0;\n\tend_assertions();\n\texit(0);"
+
 def ParserState(node):
     components = ""
     for v in node.components.vec:
@@ -552,7 +706,7 @@ def ParserState(node):
         if "\n" not in expression:
             expression += "();" #it is not a select, thus it is a direct parser state transition
     if node.name == "reject":
-        expression += "printf(\"Packet dropped\");\n\texit(0);"
+        expression += dropPacketCode()
     forwardDeclarations.add(node.name)
     parser = "void " + node.name + "() {\n" + components + "\t" + expression + "\n}\n\n"
     return parser
@@ -562,6 +716,62 @@ def ParserState(node):
     return returnString
 
 ########### HELPER FUNCTIONS ###########
+
+def actionListWithRules(node):
+    #forwardingRules
+    returnString = ""
+    defaultRule = ""
+    for rule in forwardingRules[currentTable]:
+        if rule[0] == "table_add":
+            match = ""
+            for idx, key in enumerate(currentTableKeys):
+                if currentTableKeys[key] == "exact":
+                    match += key + " == " + convertCommandValue(rule[2][idx]) + "&& "
+            match = match[:-3]
+            arguments = ""
+            for arg in rule[3]:
+                arguments += convertCommandValue(arg) + ", "
+            arguments = arguments[:-2]
+            returnString += "\tif(" + match + "){\n\t\t" + getActionFullName(rule[1]) + "(" + arguments + ");\n\t} else"
+        elif rule[0] == "table_set_default":
+            defaultRule = " {\n\t\t" + getActionFullName(rule[1]) + "();\n\t}"
+    if defaultRule != "":
+        returnString += defaultRule
+    else:
+        returnString = returnString[:-5]
+    #returnString += str(forwardingRules[currentTable])
+    return returnString
+
+def convertCommandValue(arg):
+    if ":" in arg:
+        return str(int(arg.translate(None, ":"), 16))
+    else:
+        return arg
+
+def getActionFullName(actionName):
+    actionName = actionName + "_"
+    for action in actionIDs:
+        if actionName in action:
+            return action + "_" + str(actionIDs[action])
+    return "UNKNOWN_ACTION"
+
+def actionListNoRules(node):
+    returnString = "\tint symbol;\n" + klee_make_symbolic("symbol")
+    returnString += "\tswitch(symbol) {\n"
+    for idx,action in enumerate(node.actionList.vec):
+        if idx == len(node.actionList.vec) - 1:
+            returnString += "\t\tdefault: "
+        else:
+            returnString += "\t\tcase " + str(idx) + ": "
+        if action.expression.Node_Type == "PathExpression":
+            returnString += action.expression.path.name + "_" + str(actionIDs[action.expression.path.name]) + "(); "
+        elif action.expression.Node_Type == "MethodCallExpression":
+            returnString += action.expression.method.path.name + "_" + str(actionIDs[action.expression.method.path.name]) + "(); "
+        else:
+            returnString += "ERROR:UNKNOWN ACTION LIST TYPE"
+        returnString += "break;\n"
+    returnString += "\t}"
+    return returnString
 
 def SymbolizeParameters(node):
     returnString = ""
@@ -633,6 +843,11 @@ def emit(node):
         headerName = node.arguments.vec[0].left.member
     else:
         headerName = hdrName.split(".")[1]
+    for emitAssertion in emitHeadersAssertions:
+        if headerName in emitAssertion:
+            headerNameNoHeaderStack = emitAssertion.replace("[", "").replace("]", "")
+            returnString += "emit_header_" + headerNameNoHeaderStack + " = " + emitAssertion + ".isValid;\n\t"
+
     for header in headers:
         if header[0] == getHeaderType(headerName):
             for field in header[1]:
@@ -651,12 +866,14 @@ def emit(node):
 def extract(node):
     returnString = ""
     headerToExtract = toC(node.arguments.vec[0])
+    returnString += "//Extract " + headerToExtract + "\n\t"
     if headerToExtract.endswith(".next"): # parsing a header stack
         headerToExtract = headerToExtract[:-5]
         returnString += headerToExtract + "[" + headerToExtract + "_index]" + ".isValid = 1;\n\t"
         returnString += headerToExtract + "_index++;"
     else: 
-        returnString += headerToExtract + ".isValid = 1;"
+        returnString += headerToExtract + ".isValid = 1;\n\t"
+        returnString += "[POST]extract_header_" + headerToExtract.replace(".", "_") + " = 1;"
     return returnString
 
 def cast(expr, toType):
@@ -670,16 +887,24 @@ def bitsSizeToType(size):
         return "uint8_t"
     elif size <= 32:
         return "uint32_t"
-    elif size <= 64:
-        return "uint64_t"
+    #elif size <= 64:
     else:
-        return "???"
+        return "uint64_t"
+    #else:
+    #    return "???"
 
 def klee_make_symbolic(var):
-    return "\tklee_make_symbolic(&" + var + ", sizeof(" + var + "), \"" + var + "\");\n"
+    returnString = ""
+    if "." in var:
+        returnString += "\tuint64_t tmp_symbolic;\n"
+        returnString += "\tklee_make_symbolic(&tmp_symbolic, sizeof(tmp_symbolic), \"tmp_symbolic\");\n\t"
+        returnString += var + " = tmp_symbolic;\n"
+    else:
+        returnString += "\tklee_make_symbolic(&" + var + ", sizeof(" + var + "), \"" + var + "\");\n"
+    return returnString
 
 # ---- V1 specific ----
 
 def mark_to_drop():
-    return "void mark_to_drop() {\n\tprintf(\"Packet dropped\\n\");\n\texit(0);\n}\n"
+    return "void mark_to_drop() {\n\t" + dropPacketCode() + "\n}\n"
 

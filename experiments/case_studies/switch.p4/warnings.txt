@@ -1,0 +1,78 @@
+
+/home/$USER/p4c/build/p4test --pp switch_16.p4 --p4-14 switch.p4
+
+l3.p4(158): warning: -1: negative value with unsigned type
+    add_to_field(ipv4.ttl, -1);
+                            ^
+l3.p4(166): warning: -1: negative value with unsigned type
+    add_to_field(ipv4.ttl, -1);
+                            ^
+l3.p4(174): warning: -1: negative value with unsigned type
+    add_to_field(ipv6.hopLimit, -1);
+                                 ^
+l3.p4(182): warning: -1: negative value with unsigned type
+    add_to_field(ipv6.hopLimit, -1);
+                                 ^
+l3.p4(190): warning: -1: negative value with unsigned type
+    add_to_field(mpls[0].ttl, -1);
+                               ^
+nat.p4(160): warning: -20: negative value with unsigned type
+    add(nat_metadata.l4_len, ipv4.totalLen, -20);
+                                             ^^
+tunnel.p4(1011): warning: -14: negative value with unsigned type
+    add(egress_metadata.payload_length, standard_metadata.packet_length, -14);
+                                                                          ^^
+fabric.p4(211): warning: Could not infer type for fabric_mgid, using bit<8>
+action set_fabric_multicast(fabric_mgid) {
+                            ^^^^^^^^^^^
+warning: The order of headers in deparser is not uniquely determined by parser!
+includes/parser.p4(487): warning: SelectCase: unreachable
+        default: parse_all_int_meta_value_heders;
+        ^^^^^^^
+
+
+---------------------------------------------------------------------------------------------------------------------------------
+/home/$USER/p4c/build/p4c-bm2-ss switch_16.p4 --toJSON switch.json
+
+switch_16.p4(1038): warning: SelectCase: unreachable
+            default: parse_all_int_meta_value_heders;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+switch_16.p4(6098): warning: Unused action parameter fabric_mgid
+    @name(".set_fabric_multicast") action set_fabric_multicast(bit<8> fabric_mgid) {
+                                                                      ^^^^^^^^^^^
+switch_16.p4(3617): warning: Target does not support default_action for .port_vlan_mapping (due to action profiles)
+    @name(".port_vlan_mapping") table port_vlan_mapping {
+                                      ^^^^^^^^^^^^^^^^^
+switch_16.p4(5977): warning: Target does not support default_action for .ecmp_group (due to action profiles)
+    @name(".ecmp_group") table ecmp_group {
+                               ^^^^^^^^^^
+switch_16.p4(6043): warning: Target does not support default_action for .lag_group (due to action profiles)
+    @name(".lag_group") table lag_group {
+                              ^^^^^^^^^
+switch_16.p4(6101): warning: Target does not support default_action for .fabric_lag (due to action profiles)
+    @name(".fabric_lag") table fabric_lag {
+                               ^^^^^^^^^^
+switch_16.p4(3859): warning: .sflow_ingress_session_pkt_counter: Direct counter not used; ignoring
+    @name(".sflow_ingress_session_pkt_counter") direct_counter(CounterType.packets) sflow_ingress_session_pkt_counter;
+                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+switch_16.p4(5275): warning: .ipv4_multicast_route_s_g_stats: Direct counter not used; ignoring
+    @name(".ipv4_multicast_route_s_g_stats") direct_counter(CounterType.packets) ipv4_multicast_route_s_g_stats;
+                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+switch_16.p4(5276): warning: .ipv4_multicast_route_star_g_stats: Direct counter not used; ignoring
+    @name(".ipv4_multicast_route_star_g_stats") direct_counter(CounterType.packets) ipv4_multicast_route_star_g_stats;
+                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+switch_16.p4(5408): warning: .ipv6_multicast_route_s_g_stats: Direct counter not used; ignoring
+    @name(".ipv6_multicast_route_s_g_stats") direct_counter(CounterType.packets) ipv6_multicast_route_s_g_stats;
+                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+switch_16.p4(5409): warning: .ipv6_multicast_route_star_g_stats: Direct counter not used; ignoring
+    @name(".ipv6_multicast_route_star_g_stats") direct_counter(CounterType.packets) ipv6_multicast_route_star_g_stats;
+                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+switch_16.p4(5755): warning: .meter_stats: Direct counter not used; ignoring
+    @name(".meter_stats") direct_counter(CounterType.packets) meter_stats;
+                                                              ^^^^^^^^^^^
+switch_16.p4(5820): warning: .storm_control_stats: Direct counter not used; ignoring
+    @name(".storm_control_stats") direct_counter(CounterType.packets) storm_control_stats;
+                                                                      ^^^^^^^^^^^^^^^^^^^
+switch_16.p4(2396): warning: .egress_bd_stats: Direct counter not used; ignoring
+    @name(".egress_bd_stats") direct_counter(CounterType.packets_and_bytes) egress_bd_stats;
+                                                                            ^^^^^^^^^^^^^^^
