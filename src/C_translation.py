@@ -1,4 +1,5 @@
 import re
+import uuid
 
 headers = []
 structFieldsHeaderTypes = {} #structField, structFieldType
@@ -16,7 +17,7 @@ currentTable = ""
 forwardingRules = {}
 currentTableKeys = {} #keyName, (exact, lpm or ternary)
 globalDeclarations = ""
-finalAssertions = "void end_assertions(){\n"
+finalAssertions = "assert_error(char msg[]) {\n\tprintf(\"Assertion Error: %s\", msg);\n\tklee_abort();\n}\n\nvoid end_assertions(){\n"
 emitHeadersAssertions = []
 extractHeadersAssertions = []
 
@@ -44,17 +45,16 @@ def run(node, rules):
     if rules:
         global forwardingRules
         forwardingRules = rules
-    returnString = "#define BITSLICE(x, a, b) ((x) >> (b)) & ((1 << ((a)-(b)+1)) - 1)\n#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n\nint assert_forward = 1;\nint action_run;\n\n"
+    returnString = "#define BITSLICE(x, a, b) ((x) >> (b)) & ((1 << ((a)-(b)+1)) - 1)\n#include<stdio.h>\n#include<stdint.h>\n#include<stdlib.h>\n#include<assert.h>\n\nint assert_forward = 1;\nint action_run;\n\nvoid end_assertions();\n\n"
     program = toC(node)
     returnString += globalDeclarations
     for declaration in forwardDeclarations:
         returnString += "\nvoid " + declaration + "();"
-    returnString += "\n\n" + finalAssertions + "}\n\n" + program
+    returnString += "\n\n" + program + finalAssertions + "}\n\n"
     return returnString
     
 
 def toC(node):
-    #print str(node.Node_ID) + ": " + node.Node_Type
     # test for annotations
     returnString = ""
     if hasattr(node, "annotations"):
@@ -172,15 +172,13 @@ def Annotations(node):
     returnString = ""
     for annotation in node.annotations.vec:
         if annotation.name == "assert":
-            assert_string = annotation.expr.vec[0].value.split("?")
-            assertionResults = assertion(assert_string[0], annotation.expr.vec[0].Node_ID)
+            assert_string = annotation.expr.vec[0].value
+            assertionResults = assertion(assert_string, annotation.expr.vec[0].Node_ID)
             returnString += assertionResults[0]
-            if assert_string[1] != "":
-                message = assert_string[1] + "\\n"
-            else:
-                message = assertionResults[2]
+            #if assert_string[1] != "":
+            #    message = assert_string[1] + "\\n"
             global finalAssertions
-            finalAssertions += "\tif(" + assertionResults[1] + "){\n\t\tprintf(\"Assert error: " + message + "\");\n\t}\n\n"
+            finalAssertions += "\t//if(!(" + assertionResults[1] + ")) assert_error(\"" + assertionResults[1] + "\");\n"
     return returnString
 
 def assertion(assertionString, nodeID):
@@ -191,7 +189,6 @@ def assertion(assertionString, nodeID):
         neg = assertion(assertionString[1:], nodeID)
         returnString += neg[0]
         logicalExpression = "!" + neg[1]
-        errorMessage = "not " + neg[2]
     elif "if(" == assertionString[:3]: #TODO: finish this
         ifExpression = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
         ifParameters = re.split(r',\s*(?![^()]*\))', ifExpression)
@@ -199,41 +196,46 @@ def assertion(assertionString, nodeID):
         returnString += left[0]
         right = assertion(ifParameters[1], nodeID)
         returnString += right[0]
-        logicalExpression = "!(" + left[1] + ") && (" + right[1] + ")"
-        errorMessage = "if expression " + ifExpression + " evaluated to false"
+        logicalExpression = "!(" + left[1] + ") || (" + right[1] + ")"
     elif "&&" in assertionString:
         andParameters = assertionString.split(" && ")
         left = assertion(andParameters[0], nodeID)
         right = assertion(andParameters[1], nodeID)
         returnString += left[0]
         returnString += right[0]
-        logicalExpression = "(" + left[1] + ") || (" + right[1] + ")"
-        errorMessage = left[1] + " and " + right[1]
+        logicalExpression = "(" + left[1] + ") && (" + right[1] + ")"
     elif "==" in assertionString:
         equalityParameters = assertionString.split("==")
         left = equalityParameters[0]
         right = equalityParameters[1]
-        globalVarName =  left.replace(".", "_") + "_==_" + right.replace(".", "_") + "_" + str(nodeID)
+        globalVarName =  left.replace(".", "_")[:-1] + "_eq_" + right.replace(".", "_")[-1:] + "_" + str(nodeID)
         global globalDeclarations
         globalDeclarations += "\n int " + globalVarName + ";\n"
         logicalExpression = globalVarName
-        returnString += globalVarName + "= (" + left + " == " + right + ");"
+        returnString += globalVarName + " = (" + left + " == " + right + ");\n\t"
+    elif "<" in assertionString:
+        equalityParameters = assertionString.split("<")
+        left = equalityParameters[0]
+        right = equalityParameters[1]
+        globalVarName =  left.replace(".", "_")[:-1] + "_le_" + right.replace(".", "_")[-1:] + "_" + str(nodeID)
+        global globalDeclarations
+        globalDeclarations += "\n int " + globalVarName + ";\n"
+        logicalExpression = globalVarName
+        returnString += globalVarName + " = (" + left + " < " + right + ");\n\t"
     elif "constant" in assertionString:
         constantVariable = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
         globalVarName = "constant_" + constantVariable.replace(".", "_") + "_" + str(nodeID)
-        constantType = "??" #TODO: get proper field type
+        constantType = "uint64_t"#TODO: get proper field type
         global globalDeclarations
         globalDeclarations += "\n" + constantType + " " + globalVarName + ";\n"
-        logicalExpression =  globalVarName + " != " + constantVariable
-        errorMessage = constantVariable + " not constant"
+        logicalExpression =  globalVarName + " == " + constantVariable
         returnString += globalVarName + " = " + constantVariable + ";"
     elif "extract" in assertionString: #TODO: assign variable to true when extract field in model
         headerToExtract = assertionString[assertionString.find("(")+1:assertionString.rfind(")")].replace(".", "_")
         globalVarName = "extract_header_" + headerToExtract
         global globalDeclarations
         globalDeclarations += "\nint " + globalVarName + " = 0;\n"
-        logicalExpression =  globalVarName + " == 0"
-        errorMessage = headerToExtract + " not extracted"
+        logicalExpression =  globalVarName
     elif "emit" in assertionString:
         headerToEmit = assertionString[assertionString.find("(")+1:assertionString.rfind(")")].replace(".", "_")
         headerToEmitNoHeaderStack = headerToEmit.replace("[", "").replace("]", "")
@@ -241,24 +243,27 @@ def assertion(assertionString, nodeID):
         emitHeadersAssertions.append(headerToEmit)
         global globalDeclarations
         globalDeclarations += "\nint " + globalVarName + " = 0;\n"
-        logicalExpression = globalVarName + " == 1"
-        errorMessage = headerToEmit + " not emitted"
+        logicalExpression = globalVarName
     elif "forward" in assertionString:
-            logicalExpression = "assert_forward == 0"
-            errorMessage =  "packet not forwarded"
+        logicalExpression = "assert_forward"
     elif "traverse" in assertionString:
         #traverseParameter = assertionString[assertionString.find("(")+1:assertionString.rfind(")")]
         globalVarName = "traverse_" + str(nodeID)
         global globalDeclarations
         globalDeclarations += "int " + globalVarName + " = 0;\n"
-        logicalExpression = globalVarName + " == 0"
-        errorMessage = globalVarName + " not traversed"
+        logicalExpression = globalVarName
         #if traverseParameter:
         #    #TODO: add globalVarName + " = 1;" to the parameter location
         #    pass
         #else:
         returnString += globalVarName + " = 1;"
-    return (returnString, logicalExpression, errorMessage)
+    else:
+        globalVarName = assertionString.replace(".", "_") + "_" + str(nodeID)
+        global globalDeclarations
+        globalDeclarations += "\nint " + globalVarName + ";\n"
+        returnString += globalVarName + " = (" + assertionString + " == 1);\n\t"
+        logicalExpression = globalVarName
+    return (returnString, logicalExpression)
 
 def ArrayIndex(node):
     return toC(node.left) + "[" + str(node.right.value) + "]"
@@ -412,7 +417,7 @@ def MethodCallExpression(node):
         returnString +=  "//Extern: " + toC(node.method)
     #verify method
     elif hasattr(node.method, 'path') and node.method.path.name == "verify":
-        returnString += "if(" + toC(node.arguments.vec[0]) + ") { printf(\"" + node.arguments.vec[1].member + "\"); exit(1); }"
+        returnString += "if(" + toC(node.arguments.vec[0]) + ") { exit(1); }"
      #SetValid method
     elif hasattr(node.method, 'member') and node.method.member == "setValid":
         returnString += toC(node.method.expr) + ".isValid = 1;"
@@ -668,7 +673,8 @@ def Type_Header(node):
             #TODO: model fields with more than 64 bits properly
             if field.type.size > 64:
                 field.type.size = 64
-            returnString += "\t" + bitsSizeToType(field.type.size) + " " + field.name + " : " + str(field.type.size) + ";\n"
+            if field.name != "$valid$":
+                returnString += "\t" + bitsSizeToType(field.type.size) + " " + field.name + " : " + str(field.type.size) + ";\n"
         else:
             typeName = toC(field.type)
             returnString += "\t" + typeName + " " + field.name + ": " + str(typedef[typeName].type.size) + ";\n"
@@ -854,11 +860,9 @@ def emit(node):
                 size = typedef[field.type.path.name].type.size if field.type.Node_Type == "Type_Name" else field.type.size
                 if hdrName.split(".")[1] in headerStackSize.keys():
                     for idx in range(headerStackSize[hdrName.split(".")[1]]):
-                        #returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "["+ str(idx) + "]." + field.name + ": \", " + hdrName + "[" + str(idx) + "]." + field.name + ");\n\t"
                         global emitPosition
                         emitPosition += size
                 else:
-                    #returnString += "klee_print_expr(\"" + str(size) + ", " + hdrName + "." + field.name + ": \", " + hdrName + "." + field.name + ");\n\t"
                     global emitPosition
                     emitPosition += size
     return returnString
@@ -896,9 +900,10 @@ def bitsSizeToType(size):
 def klee_make_symbolic(var):
     returnString = ""
     if "." in var:
-        returnString += "\tuint64_t tmp_symbolic;\n"
-        returnString += "\tklee_make_symbolic(&tmp_symbolic, sizeof(tmp_symbolic), \"tmp_symbolic\");\n\t"
-        returnString += var + " = tmp_symbolic;\n"
+        symbolic_name = "t" + str(uuid.uuid4()).replace("-", "_")
+        returnString += "\n\tuint64_t "+ symbolic_name + ";\n"
+        returnString += "\tklee_make_symbolic(&" + symbolic_name + ", sizeof(" + symbolic_name + "), \"" + symbolic_name + "\");\n\t"
+        returnString += var + " = " + symbolic_name + ";\n"
     else:
         returnString += "\tklee_make_symbolic(&" + var + ", sizeof(" + var + "), \"" + var + "\");\n"
     return returnString
