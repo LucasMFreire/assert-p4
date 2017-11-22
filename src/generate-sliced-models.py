@@ -20,10 +20,12 @@ with open(filename) as f:
         lines.append(line)
 
     make_sure_path_exists("single-assertion-models")
+    os.chdir("single-assertion-models")
     for assertion in assertion_line_numbers:
+        #TODO: each iteration in a new thread
         new_model = lines[:]
         new_model[assertion] = "\t" + new_model[assertion][3:]
-        new_file_name = "single-assertion-models/" + filename[:-2] + "_" + str(assertion + 1) + ".c"
+        new_file_name = filename[:-2] + "_" + str(assertion + 1) + ".c"
         new_model_file = open(new_file_name, 'w')
         for line in new_model:
             new_model_file.write("%s" % line)
@@ -44,4 +46,4 @@ with open(filename) as f:
                     continue
             processed_file.close()
             os.system("llvm-gcc -I ../../include -emit-llvm -c -g " + processed_file_name)
-            os.system("klee --search=dfs --no-output " + processed_file_name[:-1] + "o")
+            os.system("klee --search=dfs --no-output " + processed_file_name[:-1] + "o > " + processed_file_name[:-1] + "-results.txt")
