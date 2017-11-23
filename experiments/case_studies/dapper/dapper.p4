@@ -101,32 +101,32 @@ header options_nop_t {
 }
 
 struct metadata {
-    @name("intrinsic_metadata") 
+    @name(".intrinsic_metadata") 
     intrinsic_metadata_t intrinsic_metadata;
-    @name("my_metadata") 
+    @name(".my_metadata") 
     my_metadata_t        my_metadata;
-    @name("routing_metadata") 
+    @name(".routing_metadata") 
     routing_metadata_t   routing_metadata;
-    @name("stats_metadata") 
+    @name(".stats_metadata") 
     stats_metadata_t     stats_metadata;
 }
 
 struct headers {
-    @name("ethernet") 
+    @name(".ethernet") 
     ethernet_t       ethernet;
-    @name("ipv4") 
+    @name(".ipv4") 
     ipv4_t           ipv4;
-    @name("options_end") 
+    @name(".options_end") 
     options_end_t    options_end;
-    @name("options_mss") 
+    @name(".options_mss") 
     options_mss_t    options_mss;
-    @name("options_sack") 
+    @name(".options_sack") 
     options_sack_t   options_sack;
-    @name("options_ts") 
+    @name(".options_ts") 
     options_ts_t     options_ts;
-    @name("options_wscale") 
+    @name(".options_wscale") 
     options_wscale_t options_wscale;
-    @name("tcp") 
+    @name(".tcp") 
     tcp_t            tcp;
     @name(".options_nop") 
     options_nop_t[3] options_nop;
@@ -252,6 +252,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         metaIP.write((bit<32>)meta.stats_metadata.flow_map_index, (bit<32>)meta.stats_metadata.senderIP);
     }
     @name(".get_sender_IP") action get_sender_IP() {
+	@assert("if(hdr.tcp.ack, traverse)"){}
         sendIP.read(meta.stats_metadata.senderIP, (bit<32>)meta.stats_metadata.flow_map_index);
         flow_last_seq_sent.read(meta.stats_metadata.seqNo, (bit<32>)meta.stats_metadata.flow_map_index);
         flow_last_ack_rcvd.read(meta.stats_metadata.ackNo, (bit<32>)meta.stats_metadata.flow_map_index);
@@ -283,7 +284,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         ack_time.write((bit<32>)meta.stats_metadata.flow_map_index, (bit<32>)meta.intrinsic_metadata.ingress_global_timestamp);
     }
     @name(".update_flow_retx_3dupack") action update_flow_retx_3dupack() {
-        @assert("if(meta.stats_metadata.dupack < 3, !traverse)"){}
+	@assert("if(meta.stats_metadata.dupack < 3, !traverse)"){}
         flow_pkts_retx.read(meta.stats_metadata.dummy, (bit<32>)meta.stats_metadata.flow_map_index);
         meta.stats_metadata.dummy = meta.stats_metadata.dummy + 32w1;
         flow_pkts_retx.write((bit<32>)meta.stats_metadata.flow_map_index, (bit<32>)meta.stats_metadata.dummy);
@@ -452,10 +453,23 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         }
     }
     apply {
-        @assert("if(hdr.ipv4.ttl == 0, !forward)"){}
-        @assert("constant(hdr.tcp)"){}
-        @assert("if(hdr.tcp.ack, traverse(get_sender_IP)))"){}
-        @assert("if(!hdr.tcp.ack, XOR(traverse(get_sender_IP), traverse(record_IP)) && XOR(traverse(update_flow_sent), traverse(update_flow_retx_3dupack), traverse(update_flow_flow_timeout)))"){}
+	@assert("if(hdr.ipv4.ttl == 0, !forward)"){}
+
+    @assert("constant(hdr.tcp.dstPort)"){}
+    @assert("constant(hdr.tcp.seqNo)"){}
+    @assert("constant(hdr.tcp.ackNo)"){}
+    @assert("constant(hdr.tcp.dataOffset)"){}
+    @assert("constant(hdr.tcp.res)"){}
+    @assert("constant(hdr.tcp.ecn)"){}
+    @assert("constant(hdr.tcp.urg)"){}
+    @assert("constant(hdr.tcp.ack)"){}
+    @assert("constant(hdr.tcp.push)"){}
+    @assert("constant(hdr.tcp.rst)"){}
+    @assert("constant(hdr.tcp.syn)"){}
+    @assert("constant(hdr.tcp.fin)"){}
+    @assert("constant(hdr.tcp.window)"){}
+    @assert("constant(hdr.tcp.checksum)"){}
+    @assert("constant(hdr.tcp.urgentPtr)"){}
 
         if (hdr.ipv4.protocol == 8w0x6) {
             if (hdr.ipv4.srcAddr > hdr.ipv4.dstAddr) {
@@ -530,18 +544,15 @@ control DeparserImpl(packet_out packet, in headers hdr) {
     }
 }
 
-control verifyChecksum(in headers hdr, inout metadata meta) {
-    Checksum16() ipv4_checksum;
+control verifyChecksum(inout headers hdr, inout metadata meta) {
     apply {
-        if (hdr.ipv4.hdrChecksum == ipv4_checksum.get({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr })) 
-            mark_to_drop();
+        verify_checksum(true, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
     }
 }
 
 control computeChecksum(inout headers hdr, inout metadata meta) {
-    Checksum16() ipv4_checksum;
     apply {
-        hdr.ipv4.hdrChecksum = ipv4_checksum.get({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr });
+        update_checksum(true, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
     }
 }
 

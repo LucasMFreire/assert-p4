@@ -1,7 +1,7 @@
 STARTTIME=$(date +%s)
 
-llvm-gcc -I ../../include -emit-llvm -c -g dapper-assert.c
-klee --search=dfs --no-output dapper-assert.o
+llvm-gcc -I ../../include -emit-llvm -c -g $1.c
+klee --search=dfs --no-output $1.o
 
 ENDTIME=$(date +%s)
 ELAPSED_TIME=$(($ENDTIME - $STARTTIME))
