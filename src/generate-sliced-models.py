@@ -85,15 +85,35 @@ def check_model(filename):
             processed_file.close()
             run_klee(processed_file_name)
         
+def no_slice(filename):
+    with open(filename) as f:
+        new_file_name = filename[:-2] + "_assertions.c"
+        new_model_file = open(new_file_name, 'w')
+        for line in f:
+            if "\t//if(!" in line:
+                line = "\t" + line[3:]
+            new_model_file.write("%s" % line)
+        new_model_file.close()
+        run_klee(new_file_name)
+        
 
 start = time.time()
 parallel_checking(sys.argv[1])
 end = time.time()
 parallel_time = end - start
+
 os.chdir("..")
 start = time.time()
 check_model(sys.argv[1])
 end = time.time()
 nonparallel_time = end - start
+
+os.chdir("..")
+start = time.time()
+no_slice(sys.argv[1])
+end = time.time()
+noslice_time = end - start
+
 print "\n\nParallel: " + str(parallel_time)
 print "Nonparallel: " + str(nonparallel_time)
+print "Noslice: " + str(noslice_time)
