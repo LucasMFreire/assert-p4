@@ -24,6 +24,7 @@ void tbl_Drop_action_101809();
 void smac_1_93165();
 void tbl_act_8_102306();
 void reject();
+void end_assertions();
 
 int action_run;  
 
@@ -108,16 +109,16 @@ void start() {
 void parse_ipv4() {
 	p.ip.isValid = 1;
 	tmp_10 = (p.ip.version == 4);
-	if(tmp_10 == 0) { printf("IPv4IncorrectVersion"); reject(); }
+	if(tmp_10 == 0) { reject(); }
 	tmp_11 = (p.ip.ihl == 5);
-	if(tmp_11 == 0) { printf("IPv4OptionsNotSupported"); reject(); }
+	if(tmp_11 == 0) { reject(); }
 	//Extern: ck.clear
 	//Extern: ck.update
 		klee_make_symbolic(&tmp_12, sizeof(tmp_12), "tmp_12");
 
 	tmp_13 = (tmp_12 == 0);
 	tmp_14 = tmp_13;
-	if(tmp_14 == 0) { printf("IPv4ChecksumError"); reject(); }
+	if(tmp_14 == 0) { reject(); }
 	accept();
 }
 
@@ -128,7 +129,7 @@ void accept() {
 
 
 void reject() {
-	printf("Packet dropped\n");
+	end_assertions();
 	exit(0);
 }
 
@@ -524,47 +525,6 @@ void TopDeparser() {
 
     }
     
-	//Emit p.ip
-
-  if(a1 && outCtrl.outputPort != 15){
-   	printf(":: INCORRECT FORWARD, PACKET SHOULD HAVE DROPPED\n");
-  }
-  
-  if(p.ip.ttl == 0 && outCtrl.outputPort != 15){
-   	printf("Assert error:: forwad -> p.ip.ttl == 0\n");
-  }
-  
-  if(version_const != p.ip.version){
-    printf("Assert error:: version_const\n");
-  }
-  if(ihl_const != p.ip.ihl){
-    printf("Assert error:: ihl_const\n");
-  }
-  if(diffserv_const != p.ip.diffserv){
-    printf("Assert error:: diffserv_const\n");
-  }
-  if(totalLen_const != p.ip.totalLen){
-    printf("Assert error:: totalLen_const\n");
-  }
-  if(identification_const != p.ip.identification){
-    printf("Assert error:: identification_const\n");
-  }
-  if(flags_const != p.ip.flags){
-    printf("Assert error:: flags_const\n");
-  }
-  if(fragOffset_const != p.ip.fragOffset){
-    printf("Assert error:: fragOffset_const\n");
-  }
-  if(protocol_const != p.ip.protocol){
-    printf("Assert error:: protocol_const\n");
-  }
-  if(srcAddr_const != p.ip.srcAddr){
-    printf("Assert error:: srcAddr_const\n");
-  }
-  if(dstAddr_const != p.ip.dstAddr){
-    printf("Assert error:: dstAddr_const\n");
-  }
-  
 }
 
 
@@ -597,5 +557,48 @@ int main() {
 	TopParser();
 	TopPipe();
 	TopDeparser();
+	end_assertions();
 	return 0;
+}
+
+void end_assertions(){
+if(a1 && outCtrl.outputPort != 15){
+        printf(":: INCORRECT FORWARD, PACKET SHOULD HAVE DROPPED");
+  }
+
+  if(p.ip.ttl == 0 && outCtrl.outputPort != 15){
+        printf( "Assert error:: forwad -> p.ip.ttl == 0\n");
+  }
+
+  if(version_const != p.ip.version){
+    printf( "Assert error:: version_const");
+  }
+  if(ihl_const != p.ip.ihl){
+    printf( "Assert error:: ihl_const");
+  }
+  if(diffserv_const != p.ip.diffserv){
+    printf( "Assert error:: diffserv_const");
+  }
+  if(totalLen_const != p.ip.totalLen){
+    printf( "Assert error:: totalLen_const");
+  }
+  if(identification_const != p.ip.identification){
+    printf( "Assert error:: identification_const");
+  }
+  if(flags_const != p.ip.flags){
+    printf( "Assert error:: flags_const");
+  }
+  if(fragOffset_const != p.ip.fragOffset){
+    printf("Assert error:: fragOffset_const");
+  }
+  if(protocol_const != p.ip.protocol){
+    printf( "Assert error:: protocol_const");
+  }
+  if(srcAddr_const != p.ip.srcAddr){
+    printf( "Assert error:: srcAddr_const");
+  }
+  if(dstAddr_const != p.ip.dstAddr){
+    printf( "Assert error:: dstAddr_const");
+  }
+
 }

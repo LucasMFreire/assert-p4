@@ -12,8 +12,12 @@ void tbl_add_mri_option_150190();
 void swid_1_141825();
 void tbl_act_150375();
 void reject();
+void end_assertions();
 
 int action_run;
+int added_switch_id = 0;
+int extract_id[9] = {0};
+int push_fronts = 0;
 
 typedef struct {
 	uint32_t ingress_port : 9;
@@ -37,7 +41,7 @@ typedef struct {
 
 
 void mark_to_drop() {
-	printf("Packet dropped\n");
+	end_assertions();
 	exit(0);
 }
 
@@ -161,7 +165,7 @@ void parse_mri() {
 
 
 void reject() {
-	printf("Packet dropped\n");
+	end_assertions();
 	exit(0);
 }
 
@@ -170,6 +174,7 @@ void parse_swid() {
   	 reject();
   }
 	hdr.swids[hdr.swids_index].isValid = 1;
+	extract_id[hdr.swids_index] = 1;
 	hdr.swids_index++;
 	tmp_8 = meta.parser_metadata.remaining + 65535;
 	meta.parser_metadata.remaining = tmp_8;
@@ -256,7 +261,8 @@ void add_mri_option_0_143531() {
 }
 
 void push_front(int count) {
-    for (int i = 8; i >= 0; i -= 1) {
+    int i;
+    for (i = 8; i >= 0; i -= 1) {
         if (i >= count) {
             hdr.swids[i] = hdr.swids[i-count];
         } else {
@@ -264,6 +270,7 @@ void push_front(int count) {
         }
     }
     hdr.swids_index = hdr.swids_index + count;
+    push_fronts += count;
     if (hdr.swids_index > 8) hdr.swids_index = 8;
     // Note: this.last, this.next, and this.lastIndex adjust with this.nextIndex
 }
@@ -278,6 +285,7 @@ void add_swid_0_143681() {
 	push_front(1);
 	hdr.swids[0].swid = id;
 	id_const = id;
+	added_switch_id = 1;
 	tmp_11 = hdr.ipv4.ihl + 1;
 	hdr.ipv4.ihl = hdr.ipv4.ihl + 1;
 	tmp_12 = hdr.ipv4_option.optionLength + 4;
@@ -390,33 +398,25 @@ void tbl_act_150375() {
 	// default_action act();
 }
 
-
-
-//Control
-
-void DeparserImpl() {
- 
-	//Emit hdr.ethernet
-	
-	//Emit hdr.ipv4
-	
-	//Emit hdr.ipv4_option
-	
-	//Emit hdr.mri
-	
-	//Emit hdr.swids
-	if(id_const != hdr.swids[0].swid){
-		printf("Assert error: const(switchid)");
-	}
-	
-}
-
 int main() {
 	ParserImpl();
 	ingress();
 	egress();
-	DeparserImpl();
+	end_assertions();
 	return 0;
 }
 
+void end_assertions(){
 
+if(added_switch_id && id_const != hdr.swids[0].swid){
+                printf("Assert error: const(switchid)");
+        }
+
+        int i;
+        for(i = 0; i < 9; i++){
+          if(extract_id[i] == 1 && !(hdr.swids[i+push_fronts].isValid == 1)){
+                printf("switch id removed");
+         }
+        }
+
+}

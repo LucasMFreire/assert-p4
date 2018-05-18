@@ -24,7 +24,7 @@ void parse_rtp();
 
 void end_assertions(){
 	if(assert_forward && hdr_ipv4_dstAddr_eq_4009820417_112630 && (hdr_rtp_timestamp_eq_3 || hdr_rtp_timestamp_eq_4)){
-		printf("Assert error: if expression forward && hdr.ipv4.srcAddr == 4009820417, !(hdr.rtp.timestamp == 3 || hdr.rtp.timestamp == 4) evaluated to false");
+	printf("Assert error: if expression forward && hdr.ipv4.srcAddr == 4009820417, !(hdr.rtp.timestamp == 3 || hdr.rtp.timestamp == 4) evaluated to false");
 	}
 
 }
@@ -61,7 +61,6 @@ typedef struct {
 	uint64_t dstAddr : 48;
 	uint64_t srcAddr : 48;
 	uint32_t etherType : 16;
-	uint8_t $valid$ : 1;
 } ethernet_t;
 
 typedef struct {
@@ -78,7 +77,6 @@ typedef struct {
 	uint32_t hdrChecksum : 16;
 	uint32_t srcAddr : 32;
 	uint32_t dstAddr : 32;
-	uint8_t $valid$ : 1;
 } ipv4_t;
 
 typedef struct {
@@ -92,7 +90,6 @@ typedef struct {
 	uint32_t sequence_number : 16;
 	uint32_t timestamp : 32;
 	uint32_t SSRC : 32;
-	uint8_t $valid$ : 1;
 } rtp_t;
 
 typedef struct {
@@ -101,7 +98,6 @@ typedef struct {
 	uint32_t dstPort : 16;
 	uint32_t hdr_length : 16;
 	uint32_t checksum : 16;
-	uint8_t $valid$ : 1;
 } udp_t;
 
 typedef struct {

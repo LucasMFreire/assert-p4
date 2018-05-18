@@ -1145,7 +1145,7 @@ typedef struct {
 	uint32_t desiredMinTxInterval : 32;
 	uint32_t requiredMinRxInterval : 32;
 	uint32_t requiredMinEchoRxInterval : 32;
-	uint8_t $valid$ : 1;
+	
 } bfd_t;
 
 typedef struct {
@@ -1153,7 +1153,7 @@ typedef struct {
 	uint8_t zero : 4;
 	uint32_t reserved : 12;
 	uint32_t seqNo : 16;
-	uint8_t $valid$ : 1;
+	
 } eompls_t;
 
 typedef struct {
@@ -1165,7 +1165,7 @@ typedef struct {
 	uint32_t timestamp : 32;
 	uint32_t sgt : 16;
 	uint32_t ft_d_other : 16;
-	uint8_t $valid$ : 1;
+	
 } erspan_header_t3_t_0;
 
 typedef struct {
@@ -1173,7 +1173,7 @@ typedef struct {
 	uint64_t dstAddr : 48;
 	uint64_t srcAddr : 48;
 	uint32_t etherType : 16;
-	uint8_t $valid$ : 1;
+	
 } ethernet_t;
 
 typedef struct {
@@ -1186,7 +1186,7 @@ typedef struct {
 	uint8_t fabricQos : 5;
 	uint8_t dstDevice : 8;
 	uint32_t dstPortOrGroup : 16;
-	uint8_t $valid$ : 1;
+	
 } fabric_header_t;
 
 typedef struct {
@@ -1199,7 +1199,7 @@ typedef struct {
 	uint32_t ingressBd : 16;
 	uint32_t reasonCode : 16;
 	uint32_t mcast_grp : 16;
-	uint8_t $valid$ : 1;
+	
 } fabric_header_cpu_t;
 
 typedef struct {
@@ -1208,7 +1208,7 @@ typedef struct {
 	uint32_t egressPort : 10;
 	uint8_t egressQueue : 5;
 	uint8_t pad : 1;
-	uint8_t $valid$ : 1;
+	
 } fabric_header_mirror_t;
 
 typedef struct {
@@ -1220,14 +1220,14 @@ typedef struct {
 	uint32_t ingressIfindex : 16;
 	uint32_t ingressBd : 16;
 	uint32_t mcastGrp : 16;
-	uint8_t $valid$ : 1;
+	
 } fabric_header_multicast_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint32_t sflow_session_id : 16;
 	uint32_t sflow_egress_ifindex : 16;
-	uint8_t $valid$ : 1;
+	
 } fabric_header_sflow_t;
 
 typedef struct {
@@ -1237,13 +1237,13 @@ typedef struct {
 	uint8_t tunnelTerminate : 1;
 	uint8_t ingressTunnelType : 5;
 	uint32_t nexthopIndex : 16;
-	uint8_t $valid$ : 1;
+	
 } fabric_header_unicast_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint32_t etherType : 16;
-	uint8_t $valid$ : 1;
+	
 } fabric_payload_header_t;
 
 typedef struct {
@@ -1257,7 +1257,7 @@ typedef struct {
 	uint32_t size_ : 32;
 	uint8_t eof : 8;
 	uint32_t rsvd2 : 24;
-	uint8_t $valid$ : 1;
+	
 } fcoe_header_t;
 
 typedef struct {
@@ -1270,7 +1270,7 @@ typedef struct {
 	uint32_t protoType : 16;
 	uint32_t vni : 24;
 	uint8_t reserved2 : 8;
-	uint8_t $valid$ : 1;
+	
 } genv_t;
 
 typedef struct {
@@ -1284,14 +1284,14 @@ typedef struct {
 	uint8_t flags : 5;
 	uint8_t ver : 3;
 	uint32_t proto : 16;
-	uint8_t $valid$ : 1;
+	
 } gre_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint32_t typeCode : 16;
 	uint32_t hdrChecksum : 16;
-	uint8_t $valid$ : 1;
+	
 } icmp_t;
 
 typedef struct {
@@ -1308,7 +1308,7 @@ typedef struct {
 	uint32_t hdrChecksum : 16;
 	uint32_t srcAddr : 32;
 	uint32_t dstAddr : 32;
-	uint8_t $valid$ : 1;
+	
 } ipv4_t;
 
 typedef struct {
@@ -1321,7 +1321,7 @@ typedef struct {
 	uint8_t hopLimit : 8;
 	uint64_t srcAddr : 64;
 	uint64_t dstAddr : 64;
-	uint8_t $valid$ : 1;
+	
 } ipv6_t;
 
 typedef struct {
@@ -1330,7 +1330,7 @@ typedef struct {
 	uint32_t dstPort : 16;
 	uint32_t verifTag : 32;
 	uint32_t checksum : 32;
-	uint8_t $valid$ : 1;
+	
 } sctp_t;
 
 typedef struct {
@@ -1345,7 +1345,7 @@ typedef struct {
 	uint32_t window : 16;
 	uint32_t checksum : 16;
 	uint32_t urgentPtr : 16;
-	uint8_t $valid$ : 1;
+	
 } tcp_t;
 
 typedef struct {
@@ -1354,21 +1354,21 @@ typedef struct {
 	uint32_t dstPort : 16;
 	uint32_t length_ : 16;
 	uint32_t checksum : 16;
-	uint8_t $valid$ : 1;
+	
 } udp_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint8_t bos : 1;
 	uint32_t egress_port_id : 31;
-	uint8_t $valid$ : 1;
+	
 } int_egress_port_id_header_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint8_t bos : 1;
 	uint32_t egress_port_tx_utilization : 31;
-	uint8_t $valid$ : 1;
+	
 } int_egress_port_tx_utilization_header_t;
 
 typedef struct {
@@ -1386,14 +1386,14 @@ typedef struct {
 	uint8_t instruction_mask_0811 : 4;
 	uint8_t instruction_mask_1215 : 4;
 	uint32_t rsvd2 : 16;
-	uint8_t $valid$ : 1;
+	
 } int_header_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint8_t bos : 1;
 	uint32_t hop_latency : 31;
-	uint8_t $valid$ : 1;
+	
 } int_hop_latency_header_t;
 
 typedef struct {
@@ -1401,21 +1401,21 @@ typedef struct {
 	uint8_t bos : 1;
 	uint32_t ingress_port_id_1 : 15;
 	uint32_t ingress_port_id_0 : 16;
-	uint8_t $valid$ : 1;
+	
 } int_ingress_port_id_header_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint8_t bos : 1;
 	uint32_t ingress_tstamp : 31;
-	uint8_t $valid$ : 1;
+	
 } int_ingress_tstamp_header_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint8_t bos : 1;
 	uint32_t q_congestion : 31;
-	uint8_t $valid$ : 1;
+	
 } int_q_congestion_header_t;
 
 typedef struct {
@@ -1423,14 +1423,14 @@ typedef struct {
 	uint8_t bos : 1;
 	uint8_t q_occupancy1 : 7;
 	uint32_t q_occupancy0 : 24;
-	uint8_t $valid$ : 1;
+	
 } int_q_occupancy_header_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint8_t bos : 1;
 	uint32_t switch_id : 31;
-	uint8_t $valid$ : 1;
+	
 } int_switch_id_header_t;
 
 typedef struct {
@@ -1438,7 +1438,7 @@ typedef struct {
 	uint8_t flags : 8;
 	uint32_t nonce : 24;
 	uint32_t lsbsInstanceId : 32;
-	uint8_t $valid$ : 1;
+	
 } lisp_t;
 
 typedef struct {
@@ -1446,7 +1446,7 @@ typedef struct {
 	uint8_t dsap : 8;
 	uint8_t ssap : 8;
 	uint8_t control_ : 8;
-	uint8_t $valid$ : 1;
+	
 } llc_header_t;
 
 typedef struct {
@@ -1458,7 +1458,7 @@ typedef struct {
 	uint32_t protoType : 16;
 	uint32_t spath : 24;
 	uint8_t sindex : 8;
-	uint8_t $valid$ : 1;
+	
 } nsh_t;
 
 typedef struct {
@@ -1467,27 +1467,27 @@ typedef struct {
 	uint32_t network_shared : 32;
 	uint32_t service_platform : 32;
 	uint32_t service_shared : 32;
-	uint8_t $valid$ : 1;
+	
 } nsh_context_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint32_t tni : 24;
 	uint8_t flow_id : 8;
-	uint8_t $valid$ : 1;
+	
 } nvgre_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint64_t ib_grh : 64;
 	uint64_t ib_bth : 64;
-	uint8_t $valid$ : 1;
+	
 } roce_header_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint64_t ib_bth : 64;
-	uint8_t $valid$ : 1;
+	
 } roce_v2_header_t;
 
 typedef struct {
@@ -1499,7 +1499,7 @@ typedef struct {
 	uint32_t seqNumber : 32;
 	uint32_t uptime : 32;
 	uint32_t numSamples : 32;
-	uint8_t $valid$ : 1;
+	
 } sflow_hdr_t;
 
 typedef struct {
@@ -1511,7 +1511,7 @@ typedef struct {
 	uint32_t frameLength : 32;
 	uint32_t bytesRemoved : 32;
 	uint32_t headerSize : 32;
-	uint8_t $valid$ : 1;
+	
 } sflow_raw_hdr_record_t;
 
 typedef struct {
@@ -1528,14 +1528,14 @@ typedef struct {
 	uint32_t inputIfindex : 32;
 	uint32_t outputIfindex : 32;
 	uint32_t numFlowRecords : 32;
-	uint8_t $valid$ : 1;
+	
 } sflow_sample_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint32_t oui : 24;
 	uint32_t type_ : 16;
-	uint8_t $valid$ : 1;
+	
 } snap_header_t;
 
 typedef struct {
@@ -1547,7 +1547,7 @@ typedef struct {
 	uint8_t hopCount : 6;
 	uint32_t egressRbridge : 16;
 	uint32_t ingressRbridge : 16;
-	uint8_t $valid$ : 1;
+	
 } trill_t;
 
 typedef struct {
@@ -1559,7 +1559,7 @@ typedef struct {
 	uint8_t reserved : 1;
 	uint8_t version : 2;
 	uint32_t srcVif : 12;
-	uint8_t $valid$ : 1;
+	
 } vntag_t;
 
 typedef struct {
@@ -1568,7 +1568,7 @@ typedef struct {
 	uint32_t reserved : 24;
 	uint32_t vni : 24;
 	uint8_t reserved2 : 8;
-	uint8_t $valid$ : 1;
+	
 } vxlan_t;
 
 typedef struct {
@@ -1578,7 +1578,7 @@ typedef struct {
 	uint8_t next_proto : 8;
 	uint32_t vni : 24;
 	uint8_t reserved2 : 8;
-	uint8_t $valid$ : 1;
+	
 } vxlan_gpe_t;
 
 typedef struct {
@@ -1587,14 +1587,14 @@ typedef struct {
 	uint8_t rsvd : 8;
 	uint8_t len : 8;
 	uint8_t next_proto : 8;
-	uint8_t $valid$ : 1;
+	
 } vxlan_gpe_int_header_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint8_t bos : 1;
 	uint32_t val : 31;
-	uint8_t $valid$ : 1;
+	
 } int_value_t;
 
 typedef struct {
@@ -1603,7 +1603,7 @@ typedef struct {
 	uint8_t exp : 3;
 	uint8_t bos : 1;
 	uint8_t ttl : 8;
-	uint8_t $valid$ : 1;
+	
 } mpls_t;
 
 typedef struct {
@@ -1612,7 +1612,7 @@ typedef struct {
 	uint8_t cfi : 1;
 	uint32_t vid : 12;
 	uint32_t etherType : 16;
-	uint8_t $valid$ : 1;
+	
 } vlan_tag_t;
 
 typedef struct {
@@ -2440,10 +2440,10 @@ void egress() {
 
 }
 	if((meta.egress_metadata.port_type == 0)) {
-	if((hdr.ipv4.$valid$ == 1)) {
+	if((hdr.ipv4.isValid == 1)) {
 	_egress_ip_acl_0_5399810();
 } else {
-	if((hdr.ipv6.$valid$ == 1)) {
+	if((hdr.ipv6.isValid == 1)) {
 	_egress_ipv6_acl_0_5399937();
 } else {
 	_egress_mac_acl_0_5400060();
@@ -6463,13 +6463,13 @@ void ingress() {
 	if(action_run == 5402198) {
 		 
 	} else {
-			if((hdr.ipv4.$valid$ == 1)) {
+			if((hdr.ipv4.isValid == 1)) {
 	_validate_outer_ipv4_packet_5402874();
 } else {
-	if((hdr.ipv6.$valid$ == 1)) {
+	if((hdr.ipv6.isValid == 1)) {
 	_validate_outer_ipv6_packet_5403021();
 } else {
-	if((hdr.mpls[0].$valid$ == 1)) {
+	if((hdr.mpls[0].isValid == 1)) {
 	_validate_mpls_packet_5403205();
 }
 }
@@ -6497,7 +6497,7 @@ void ingress() {
 
 	}
 }
-	if((hdr.int_header.$valid$ != 1)) {
+	if((hdr.int_header.isValid != 1)) {
 	_int_source_0_5404861();
 } else {
 		_int_terminate_0_5404978();
@@ -6509,7 +6509,7 @@ void ingress() {
 	if((meta.ingress_metadata.port_type != 0)) {
 		_fabric_ingress_dst_lkp_5407150();
 	if((meta.ingress_metadata.port_type == 1)) {
-		if((hdr.fabric_header_multicast.$valid$ == 1)) {
+		if((hdr.fabric_header_multicast.isValid == 1)) {
 	_fabric_ingress_src_lkp_5407227();
 }
 	if((meta.tunnel_metadata.tunnel_terminate == 0)) {
@@ -6522,14 +6522,14 @@ void ingress() {
 	if((meta.tunnel_metadata.ingress_tunnel_type != 0)) {
 	_outer_rmac_0_5406371();
 	if(action_run == 5405765) {
-		 	if((hdr.ipv4.$valid$ == 1)) {
+		 	if((hdr.ipv4.isValid == 1)) {
 	_outer_ipv4_multicast_5408470();
 	if(action_run == 5408259) {
 		 	_outer_ipv4_multicast_star_g_5408569();
 
 	}
 } else {
-	if((hdr.ipv6.$valid$ == 1)) {
+	if((hdr.ipv6.isValid == 1)) {
 	_outer_ipv6_multicast_5408880();
 	if(action_run == 5408669) {
 		 	_outer_ipv6_multicast_star_g_5408979();
@@ -6539,21 +6539,21 @@ void ingress() {
 }
 
 	} else {
-			if((hdr.ipv4.$valid$ == 1)) {
+			if((hdr.ipv4.isValid == 1)) {
 	_ipv4_src_vtep_5407518();
 	if(action_run == 5407417) {
 		 	_ipv4_dest_vtep_5407435();
 
 	}
 } else {
-	if((hdr.ipv6.$valid$ == 1)) {
+	if((hdr.ipv6.isValid == 1)) {
 	_ipv6_src_vtep_5407756();
 	if(action_run == 5407655) {
 		 	_ipv6_dest_vtep_5407673();
 
 	}
 } else {
-	if((hdr.mpls[0].$valid$ == 1)) {
+	if((hdr.mpls[0].isValid == 1)) {
 	_mpls_5408147();
 }
 }
@@ -6574,7 +6574,7 @@ void ingress() {
 	_storm_control_0_5409125();
 }
 	if((meta.ingress_metadata.port_type != 1)) {
-	if(!(hdr.mpls[0].$valid$ == 1) && (meta.l3_metadata.fib_hit == 1)) {
+	if(!(hdr.mpls[0].isValid == 1) && (meta.l3_metadata.fib_hit == 1)) {
 		if((meta.ingress_metadata.bypass_lookups & 64 == 0) && (meta.ingress_metadata.drop_flag == 0)) {
 	_validate_packet_0_5409361();
 }
@@ -6700,10 +6700,10 @@ void ingress() {
 	if((meta.ingress_metadata.bypass_lookups & 16 == 0)) {
 	_meter_index_2_5415403();
 }
-	if((meta.tunnel_metadata.tunnel_terminate == 0) && (hdr.ipv4.$valid$ == 1) || (meta.tunnel_metadata.tunnel_terminate == 1) && (hdr.inner_ipv4.$valid$ == 1)) {
+	if((meta.tunnel_metadata.tunnel_terminate == 0) && (hdr.ipv4.isValid == 1) || (meta.tunnel_metadata.tunnel_terminate == 1) && (hdr.inner_ipv4.isValid == 1)) {
 	_compute_ipv4_hashes_0_5415850();
 } else {
-	if((meta.tunnel_metadata.tunnel_terminate == 0) && (hdr.ipv6.$valid$ == 1) || (meta.tunnel_metadata.tunnel_terminate == 1) && (hdr.inner_ipv6.$valid$ == 1)) {
+	if((meta.tunnel_metadata.tunnel_terminate == 0) && (hdr.ipv6.isValid == 1) || (meta.tunnel_metadata.tunnel_terminate == 1) && (hdr.inner_ipv6.isValid == 1)) {
 	_compute_ipv6_hashes_0_5415899();
 } else {
 	_compute_non_ip_hashes_0_5415946();
@@ -12301,76 +12301,76 @@ int main() {
 
 void end_assertions(){
 	if(!(traverse_5388716 == 0) && (!emit_header_vlan_tag_0 == 1)){
-		printf("Assert error: Failed property 1\n");
+		klee_print_once(1, "Assert error: Failed property 1\n");
 	}
 
 	if(!(traverse_5388756 == 0) && (!(emit_header_vlan_tag_0 == 1) || (!emit_header_vlan_tag_1 == 1))){
-		printf("Assert error: Failed property 2\n");
+		klee_print_once(2, "Assert error: Failed property 2\n");
 	}
 
 	if(!(traverse_5395828 == 0) && ((extract_header_hdr_ipv4 == 0) || (extract_header_hdr_udp == 0))){
-		printf("Assert error: Failed property 4\n");
+		klee_print_once(4, "Assert error: Failed property 4\n");
 	}
 
 	if(!(traverse_5395890 == 0) && ((extract_header_hdr_ipv4 == 0) || (extract_header_hdr_tcp == 0))){
-		printf("Assert error: Failed property 5\n");
+		klee_print_once(5, "Assert error: Failed property 5\n");
 	}
 
 	if(!(traverse_5395952 == 0) && ((extract_header_hdr_ipv4 == 0) || (extract_header_hdr_icmp == 0))){
-		printf("Assert error: Failed property 6\n");
+		klee_print_once(6, "Assert error: Failed property 6\n");
 	}
 
 	if(!(traverse_5396014 == 0) && (extract_header_hdr_ipv4 == 0)){
-		printf("Assert error: Failed property 7\n");
+		klee_print_once(7, "Assert error: Failed property 7\n");
 	}
 
 	if(!(traverse_5396061 == 0) && ((extract_header_hdr_ipv6 == 0) || (extract_header_hdr_udp == 0))){
-		printf("Assert error: Failed property 8\n");
+		klee_print_once(8, "Assert error: Failed property 8\n");
 	}
 
 	if(!(traverse_5396117 == 0) && ((extract_header_hdr_ipv6 == 0) || (extract_header_hdr_tcp == 0))){
-		printf("Assert error: Failed property 9\n");
+		klee_print_once(9, "Assert error: Failed property 9\n");
 	}
 
 	if(!(traverse_5396181 == 0) && ((extract_header_hdr_ipv6 == 0) || (extract_header_hdr_icmp == 0))){
-		printf("Assert error: Failed property 10\n");
+		klee_print_once(10, "Assert error: Failed property 10\n");
 	}
 
 	if(!(traverse_5396245 == 0) && (extract_header_hdr_ipv6 == 0)){
-		printf("Assert error: Failed property 11\n");
+		klee_print_once(11, "Assert error: Failed property 11\n");
 	}
 
 	if(!(assert_forward == 0) && (traverse_5401372 == 0)){
-		printf("Assert error: Failed property 3\n");
+		klee_print_once(3, "Assert error: Failed property 3\n");
 	}
 
 	if(!(traverse_5402860 == 0) && (!assert_forward == 0)){
-		printf("Assert error: Failed property 12\n");
+		klee_print_once(12, "Assert error: Failed property 12\n");
 	}
 
 	if(!(traverse_5403007 == 0) && (!assert_forward == 0)){
-		printf("Assert error: Failed property 13\n");
+		klee_print_once(13, "Assert error: Failed property 13\n");
 	}
 
 	if(!(traverse_5409347 == 0) && (!assert_forward == 0)){
-		printf("Assert error: Failed property 14\n");
+		klee_print_once(14, "Assert error: Failed property 14\n");
 	}
 	
 	if(!(traverse_5410626 == 0) && (!assert_forward == 0)){
-		printf("Assert error: Failed property 15\n");
+		klee_print_once(15, "Assert error: Failed property 15\n");
 	}
 
 	if(!(traverse_5410603 == 0) && (!assert_forward == 0)){
-		printf("Assert error: Failed property 15\n");
+		klee_print_once(16, "Assert error: Failed property 16\n");
 	}
 
-	if(!(traverse_5413465 == 0) && (!assert_forward == 0)){
-		printf("Assert error: Failed property 16\n");
-	}
+//	if(!(traverse_5413465 == 0) && (!assert_forward == 0)){
+//		printf("Assert error: Failed property 16\n");
+//	}
 
-	if(!(traverse_5417135 == 0) && (!constant_l3_metadata_nexthop_index_5417135 != meta.l3_metadata.nexthop_index)){
-		printf("Assert error: Failed property 17\n");
-	}
+//	if(!(traverse_5417135 == 0) && (!constant_l3_metadata_nexthop_index_5417135 != meta.l3_metadata.nexthop_index)){
+//		printf("Assert error: Failed property 17\n");
+//	}
 
 }
 

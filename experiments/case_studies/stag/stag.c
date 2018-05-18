@@ -29,6 +29,7 @@ void reject();
 void parse_ipv4();
 void NoAction_0_136741();
 void parse_stag();
+void end_assertions();
 
 typedef struct {
 	uint32_t ingress_port : 9;
@@ -66,7 +67,6 @@ typedef struct {
 	macAddr_t dstAddr: 48;
 	macAddr_t srcAddr: 48;
 	uint32_t etherType : 16;
-	uint8_t $valid$ : 1;
 } ethernet_t;
 
 typedef struct {
@@ -83,7 +83,6 @@ typedef struct {
 	uint32_t hdrChecksum : 16;
 	ip4Addr_t srcAddr: 32;
 	ip4Addr_t dstAddr: 32;
-	uint8_t $valid$ : 1;
 } ipv4_t;
 
 typedef struct {
@@ -92,13 +91,11 @@ typedef struct {
 	uint8_t optClass : 2;
 	uint8_t option : 5;
 	uint8_t optionLength : 8;
-	uint8_t $valid$ : 1;
 } ipv4_option_t;
 
 typedef struct {
 	uint8_t isValid : 1;
 	uint8_t source_color : 8;
-	uint8_t $valid$ : 1;
 } stag_t;
 
 typedef struct {
@@ -106,7 +103,6 @@ typedef struct {
 	uint8_t src_port_color : 8;
 	uint8_t dst_port_color : 8;
 	uint8_t toLocal : 1;
-	uint8_t $valid$ : 1;
 } local_md_t;
 
 typedef struct {
@@ -126,7 +122,7 @@ standard_metadata_t standard_metadata;
 
 void end_assertions(){
 	if(traverse_color_check && standard_metadata_ingress_port_eq_1_137028 && hdr_ipv4_dstAddr_eq_167772162_137028 && assert_forward){
-		printf("Assert error: if expression standard_metadata.ingress_port == 1 && hdr.ipv4.dstAddr == 167772162, !forward evaluated to false\n");
+		klee_print_once(0, "Assert error: if expression standard_metadata.ingress_port == 1 && hdr.ipv4.dstAddr == 167772162, !forward evaluated to false\n");
 	}
 
 }
@@ -145,7 +141,7 @@ void start() {
 void parse_ipv4() {
 	//Extract hdr.ipv4
 	hdr.ipv4.isValid = 1;
-	if(hdr.ipv4.ihl >= 5) { printf("IPHeaderTooShort"); exit(1); }
+	if(hdr.ipv4.ihl >= 5) { }
 	if((hdr.ipv4.ihl == 5)){
 		accept();
 	} else {
@@ -188,7 +184,9 @@ void reject() {
 void ParserImpl() {
 	klee_make_symbolic(&hdr, sizeof(hdr), "hdr");
 	klee_make_symbolic(&meta, sizeof(meta), "meta");
-	klee_make_symbolic(&standard_metadata, sizeof(standard_metadata), "standard_metadata");
+	standard_metadata_t tmp;
+	klee_make_symbolic(&tmp, sizeof(tmp), "tmp");
+	standard_metadata = tmp;
 
 	start();
 }

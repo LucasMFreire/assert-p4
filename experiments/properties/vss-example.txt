@@ -1,6 +1,0 @@
-vss-example.p4:
-    no packet forwarded with ttl < 0
-    no packet forwarded with ip version != 4
-    no packet forwarded with EtherType != 0x0800
-    if drop_action is executed, packets are always forwarded to drop port (15)
-    forwarded packets to ports != drop and CPU always go through Set_dmac and Set_smac actions

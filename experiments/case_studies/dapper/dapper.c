@@ -4,6 +4,7 @@
 #include<stdlib.h>
 #include<assert.h>
 
+int symbol;
 int assert_forward = 1;
 int action_run;
 
@@ -402,7 +403,6 @@ void ParserImpl() {
 	klee_make_symbolic(&hdr, sizeof(hdr), "hdr");
 	klee_make_symbolic(&meta, sizeof(meta), "meta");
 	klee_make_symbolic(&standard_metadata, sizeof(standard_metadata), "standard_metadata");
-
 	start();
 }
 
@@ -442,6 +442,7 @@ void send_frame_453170() {
 	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+        //switch(klee_int("symbol")){
 		case 0: rewrite_mac_0_453136(); break;
 		case 1: _drop_0_453154(); break;
 		default: NoAction_0_453126(); break;
@@ -858,7 +859,6 @@ uint32_t port;
 	meta.routing_metadata.nhop_ipv4 = nhop_ipv4;
 	standard_metadata.egress_spec = port;
 	hdr.ipv4.ttl = hdr.ipv4.ttl + 255;
-
 }
 
 
@@ -922,22 +922,20 @@ void sample_new_rtt_0_454900() {
 
 //Table
 void debug_454943() {
-	int symbol;
-	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
-	switch(symbol) {
+        klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
+        switch(symbol) {
 		case 0: save_source_IP_0_453564(); break;
 		default: NoAction_1_453262(); break;
 	}
-	// default_action NoAction_1();
-
 }
 
 
 //Table
 void direction_454977() {
-	int symbol;
+	//int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+        //switch(klee_int("symbol")){
 		case 0: get_sender_IP_0_453622(); break;
 		default: NoAction_19_453263(); break;
 	}
@@ -948,9 +946,10 @@ void direction_454977() {
 
 //Table
 void first_rtt_sample_455011() {
-	int symbol;
+	//int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: use_sample_rtt_first_0_458416(); break;
 		default: NoAction_20_453264(); break;
 	}
@@ -961,9 +960,10 @@ void first_rtt_sample_455011() {
 
 //Table
 void flow_dupack_455045() {
-	int symbol;
+	//int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+        //switch(klee_int("symbol")){
 		case 0: update_flow_dupack_0_453843(); break;
 		default: NoAction_21_453265(); break;
 	}
@@ -974,9 +974,10 @@ void flow_dupack_455045() {
 
 //Table
 void flow_rcvd_455079() {
-	int symbol;
+	//int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: update_flow_rcvd_0_453896(); break;
 		default: NoAction_22_453266(); break;
 	}
@@ -987,9 +988,10 @@ void flow_rcvd_455079() {
 
 //Table
 void flow_retx_3dupack_455113() {
-	int symbol;
+	//int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: update_flow_retx_3dupack_0_454011(); break;
 		default: NoAction_23_453267(); break;
 	}
@@ -1000,9 +1002,10 @@ void flow_retx_3dupack_455113() {
 
 //Table
 void flow_retx_timeout_455147() {
-	int symbol;
+	//int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: update_flow_retx_timeout_0_454141(); break;
 		default: NoAction_24_453268(); break;
 	}
@@ -1013,9 +1016,10 @@ void flow_retx_timeout_455147() {
 
 //Table
 void flow_sent_455181() {
-	int symbol;
+	//int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: update_flow_sent_0_454233(); break;
 		default: NoAction_25_453269(); break;
 	}
@@ -1026,9 +1030,10 @@ void flow_sent_455181() {
 
 //Table
 void forward_455215() {
-	int symbol;
+//	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: set_dmac_0_454420(); break;
 		case 1: _drop_1_454438(); break;
 		default: NoAction_26_453270(); break;
@@ -1042,9 +1047,10 @@ void forward_455215() {
 
 //Table
 void increase_cwnd_455274() {
-	int symbol;
+//	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: increase_mincwnd_0_454461(); break;
 		default: NoAction_27_453271(); break;
 	}
@@ -1055,9 +1061,10 @@ void increase_cwnd_455274() {
 
 //Table
 void init_455308() {
-	int symbol;
+	//int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: record_IP_0_454487(); break;
 		default: NoAction_28_453272(); break;
 	}
@@ -1068,9 +1075,10 @@ void init_455308() {
 
 //Table
 void ipv4_lpm_455342() {
-	int symbol;
+//	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: set_nhop_0_454574(); break;
 		case 1: _drop_4_454454(); break;
 		default: NoAction_29_453273(); break;
@@ -1084,9 +1092,10 @@ void ipv4_lpm_455342() {
 
 //Table
 void lookup_455401() {
-	int symbol;
+//	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: lookup_flow_map_0_454610(); break;
 		default: NoAction_30_453274(); break;
 	}
@@ -1097,9 +1106,9 @@ void lookup_455401() {
 
 //Table
 void lookup_reverse_455435() {
-	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: lookup_flow_map_reverse_0_454672(); break;
 		default: NoAction_31_453275(); break;
 	}
@@ -1110,9 +1119,9 @@ void lookup_reverse_455435() {
 
 //Table
 void sample_rtt_rcvd_455469() {
-	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: use_sample_rtt_0_459912(); break;
 		default: NoAction_32_453276(); break;
 	}
@@ -1123,45 +1132,16 @@ void sample_rtt_rcvd_455469() {
 
 //Table
 void sample_rtt_sent_455503() {
-	int symbol;
+//	int symbol;
 	klee_make_symbolic(&symbol, sizeof(symbol), "symbol");
 	switch(symbol) {
+//switch(klee_int("symbol")){
 		case 0: sample_new_rtt_0_454900(); break;
 		default: NoAction_33_453277(); break;
 	}
 	// default_action NoAction_33();
 
 }
-
-
-
-//Control
-
-void DeparserImpl() {
-	//Emit hdr.ethernet
-	
-	//Emit hdr.ipv4
-	
-	//Emit hdr.tcp
-	
-	//Emit hdr.options_end
-	
-	//Emit hdr.options_nop[0]
-	
-	//Emit hdr.options_nop[1]
-	
-	//Emit hdr.options_nop[2]
-	
-	//Emit hdr.options_mss
-	
-	//Emit hdr.options_wscale
-	
-	//Emit hdr.options_sack
-	
-	//Emit hdr.options_ts
-	
-}
-
 
 typedef struct {
 	uint8_t field_4 : 4;
@@ -1195,35 +1175,31 @@ int main() {
 	ParserImpl();
 	ingress();
 	egress();
-	DeparserImpl();
 	end_assertions();
 	return 0;
 }
 
-assert_error(char msg[]) {
-	printf("Assertion Error: %s", msg);
-	//klee_abort();
-}
-
 void end_assertions(){
-	//if(!(!(hdr_tcp_ack_453638) || (traverse_453638))) assert_error("!(hdr_tcp_ack_453638) || (traverse_453638)");
-	//if(!(!(meta_stats_metadata_dupack_le_3_454027) || (!traverse_454027))) assert_error("!(meta_stats_metadata_dupack_le_3_454027) || (!traverse_454027)");
-	//if(!(!(hdr_ipv4_ttl_eq_0_455545) || (!assert_forward))) assert_error("!(hdr_ipv4_ttl_eq_0_455545) || (!assert_forward)");
-	//if(!(constant_hdr_tcp_dstPort_455552 == hdr.tcp.dstPort)) assert_error("constant_hdr_tcp_dstPort_455552 == hdr.tcp.dstPort");
-	//if(!(constant_hdr_tcp_seqNo_455559 == hdr.tcp.seqNo)) assert_error("constant_hdr_tcp_seqNo_455559 == hdr.tcp.seqNo");
-	//if(!(constant_hdr_tcp_ackNo_455566 == hdr.tcp.ackNo)) assert_error("constant_hdr_tcp_ackNo_455566 == hdr.tcp.ackNo");
-	//if(!(constant_hdr_tcp_dataOffset_455573 == hdr.tcp.dataOffset)) assert_error("constant_hdr_tcp_dataOffset_455573 == hdr.tcp.dataOffset");
-	//if(!(constant_hdr_tcp_res_455580 == hdr.tcp.res)) assert_error("constant_hdr_tcp_res_455580 == hdr.tcp.res");
-	//if(!(constant_hdr_tcp_ecn_455587 == hdr.tcp.ecn)) assert_error("constant_hdr_tcp_ecn_455587 == hdr.tcp.ecn");
-	//if(!(constant_hdr_tcp_urg_455594 == hdr.tcp.urg)) assert_error("constant_hdr_tcp_urg_455594 == hdr.tcp.urg");
-	//if(!(constant_hdr_tcp_ack_455601 == hdr.tcp.ack)) assert_error("constant_hdr_tcp_ack_455601 == hdr.tcp.ack");
-	//if(!(constant_hdr_tcp_push_455608 == hdr.tcp.push)) assert_error("constant_hdr_tcp_push_455608 == hdr.tcp.push");
-	//if(!(constant_hdr_tcp_rst_455615 == hdr.tcp.rst)) assert_error("constant_hdr_tcp_rst_455615 == hdr.tcp.rst");
-	//if(!(constant_hdr_tcp_syn_455622 == hdr.tcp.syn)) assert_error("constant_hdr_tcp_syn_455622 == hdr.tcp.syn");
-	//if(!(constant_hdr_tcp_fin_455629 == hdr.tcp.fin)) assert_error("constant_hdr_tcp_fin_455629 == hdr.tcp.fin");
-	//if(!(constant_hdr_tcp_window_455636 == hdr.tcp.window)) assert_error("constant_hdr_tcp_window_455636 == hdr.tcp.window");
-	//if(!(constant_hdr_tcp_checksum_455643 == hdr.tcp.checksum)) assert_error("constant_hdr_tcp_checksum_455643 == hdr.tcp.checksum");
-	//if(!(constant_hdr_tcp_urgentPtr_455650 == hdr.tcp.urgentPtr)) assert_error("constant_hdr_tcp_urgentPtr_455650 == hdr.tcp.urgentPtr");
+
+	if(!(!(hdr_tcp_ack_453638) || (traverse_453638))) klee_print_once(0, "!(hdr_tcp_ack_453638) || (traverse_453638)");
+	if(!(!(meta_stats_metadata_dupack_le_3_454027) || (!traverse_454027))) klee_print_once(1, "!(meta_stats_metadata_dupack_le_3_454027) || (!traverse_454027)");
+	if(!(!(hdr_ipv4_ttl_eq_0_455545) || (!assert_forward))) klee_print_once(2, "!(hdr_ipv4_ttl_eq_0_455545) || (!assert_forward)\n");
+	///if(!(constant_hdr_tcp_dstPort_455552 == hdr.tcp.dstPort)) assert_error("constant_hdr_tcp_dstPort_455552 == hdr.tcp.dstPort");
+	///if(!(constant_hdr_tcp_seqNo_455559 == hdr.tcp.seqNo)) assert_error("constant_hdr_tcp_seqNo_455559 == hdr.tcp.seqNo");
+	///if(!(constant_hdr_tcp_ackNo_455566 == hdr.tcp.ackNo)) assert_error("constant_hdr_tcp_ackNo_455566 == hdr.tcp.ackNo");
+	///if(!(constant_hdr_tcp_dataOffset_455573 == hdr.tcp.dataOffset)) assert_error("constant_hdr_tcp_dataOffset_455573 == hdr.tcp.dataOffset");
+	///if(!(constant_hdr_tcp_res_455580 == hdr.tcp.res)) assert_error("constant_hdr_tcp_res_455580 == hdr.tcp.res");
+	///if(!(constant_hdr_tcp_ecn_455587 == hdr.tcp.ecn)) assert_error("constant_hdr_tcp_ecn_455587 == hdr.tcp.ecn");
+	///if(!(constant_hdr_tcp_urg_455594 == hdr.tcp.urg)) assert_error("constant_hdr_tcp_urg_455594 == hdr.tcp.urg");
+	///if(!(constant_hdr_tcp_ack_455601 == hdr.tcp.ack)) assert_error("constant_hdr_tcp_ack_455601 == hdr.tcp.ack");
+	///if(!(constant_hdr_tcp_push_455608 == hdr.tcp.push)) assert_error("constant_hdr_tcp_push_455608 == hdr.tcp.push");
+	///if(!(constant_hdr_tcp_rst_455615 == hdr.tcp.rst)) assert_error("constant_hdr_tcp_rst_455615 == hdr.tcp.rst");
+	///if(!(constant_hdr_tcp_syn_455622 == hdr.tcp.syn)) assert_error("constant_hdr_tcp_syn_455622 == hdr.tcp.syn");
+	///if(!(constant_hdr_tcp_fin_455629 == hdr.tcp.fin)) assert_error("constant_hdr_tcp_fin_455629 == hdr.tcp.fin");
+	///if(!(constant_hdr_tcp_window_455636 == hdr.tcp.window)) assert_error("constant_hdr_tcp_window_455636 == hdr.tcp.window");
+	///if(!(constant_hdr_tcp_checksum_455643 == hdr.tcp.checksum)) assert_error("constant_hdr_tcp_checksum_455643 == hdr.tcp.checksum");
+	///if(!(constant_hdr_tcp_urgentPtr_455650 == hdr.tcp.urgentPtr)) assert_error("constant_hdr_tcp_urgentPtr_455650 == hdr.tcp.urgentPtr");
+
 }
 
 

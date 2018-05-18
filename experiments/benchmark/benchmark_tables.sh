@@ -22,7 +22,7 @@ else
   fi
   python /home/$USER/Desktop/assert-p4/src/P4_to_C.py file.json $rules > benchmark_model.c
   STARTTIME=$(date +%s)
-  llvm-gcc -I ../../include -emit-llvm -c -g benchmark_model.c
+  llvm-gcc -I ../../include -emit-llvm -c -g -O3 benchmark_model.c
   klee --search=dfs --warnings-only-to-file --no-output benchmark_model.o
 fi
 

@@ -1,9 +1,16 @@
-STARTTIME=$(date +%s)
+STARTTIME=$(date +%s%N)
 
-llvm-gcc -I ../../include -emit-llvm -c -g $1.c
-klee --search=dfs --no-output $1.o
+#frama-c -slice-calls printf $1.c  -then-on 'Slicing export' -print -ocode sliced.c > /dev/null
 
-ENDTIME=$(date +%s)
-ELAPSED_TIME=$(($ENDTIME - $STARTTIME))
+#llvm-gcc -I ../../include -emit-llvm -c -g -O3 $1.c
+#klee --search=dfs --no-output $1.o
 
-echo $1 $ELAPSED_TIME >> $1_stats.txt
+clang -I ../../include -emit-llvm -c -g $1.c
+/home/osboxes/klee-3.4/klee_build_dir/bin/klee --search=dfs --no-output --warnings-only-to-file $1.bc
+
+
+
+ENDTIME=$(date +%s%N)
+ELAPSED_TIME=$((($ENDTIME - $STARTTIME)/1000000))
+
+echo $1 $ELAPSED_TIME

@@ -37,11 +37,11 @@ void forward_tbl_201838();
 
 void end_assertions(){
 	if(traverse_handle_1a == 1 && assert_forward == 0){
-		printf("Assert error: handle 1a packet not forward");
+		printf("Assert error: handle 1a packet not forward\n");
 	}
 
 	if(traverse_handle_2a == 1 && assert_forward == 0){
-		printf("Assert error: handle 2a packet not forward");
+		printf("Assert error: handle 2a packet not forward\n");
 	}
 }
 
@@ -88,7 +88,6 @@ typedef struct {
 	uint32_t spa : 32;
 	uint64_t tha : 48;
 	uint32_t tpa : 32;
-	uint8_t $valid$ : 1;
 } arp_t;
 
 typedef struct {
@@ -96,7 +95,6 @@ typedef struct {
 	uint64_t dstAddr : 48;
 	uint64_t srcAddr : 48;
 	uint32_t etherType : 16;
-	uint8_t $valid$ : 1;
 } ethernet_t;
 
 typedef struct {
@@ -105,7 +103,6 @@ typedef struct {
 	uint8_t max_resp : 8;
 	uint32_t checksum : 16;
 	uint32_t grp_addr : 32;
-	uint8_t $valid$ : 1;
 } igmp_t;
 
 typedef struct {
@@ -122,7 +119,6 @@ typedef struct {
 	uint32_t hdrChecksum : 16;
 	uint32_t srcAddr : 32;
 	uint32_t dstAddr : 32;
-	uint8_t $valid$ : 1;
 } ipv4_t;
 
 typedef struct {
@@ -135,7 +131,6 @@ typedef struct {
 	uint8_t hopLimit : 8;
 	uint64_t srcAddr : 64;
 	uint64_t dstAddr : 64;
-	uint8_t $valid$ : 1;
 } ipv6_t;
 
 typedef struct {
@@ -147,7 +142,6 @@ typedef struct {
 	uint32_t acptid : 16;
 	uint32_t paxoslen : 32;
 	uint64_t paxosval : 64;
-	uint8_t $valid$ : 1;
 } paxos_t;
 
 typedef struct {
@@ -156,7 +150,6 @@ typedef struct {
 	uint32_t dstPort : 16;
 	uint32_t length_ : 16;
 	uint32_t checksum : 16;
-	uint8_t $valid$ : 1;
 } udp_t;
 
 typedef struct {
@@ -305,10 +298,10 @@ void drop_tbl_201391() {
 //Control
 
 void ingress() {
-	if((hdr.ipv4.$valid$ == 1)) {
+	if((hdr.ipv4.isValid == 1)) {
 	forward_tbl_201838();
 }
-	if((hdr.paxos.$valid$ == 1)) {
+	if((hdr.paxos.isValid == 1)) {
 		round_tbl_201896();
 	if(meta.local_metadata.round <= hdr.paxos.rnd) {
 	acceptor_tbl_201777();
@@ -343,15 +336,15 @@ void handle_1a_0_201532(uint32_t learner_port) {
 	traverse_handle_1a = 1;
 	action_run = 201532;
 		hdr.paxos.msgtype = 1;
-		uint64_t tmp_symbolic;
+		uint64_t tmp_symbolic = 0;
 	klee_make_symbolic(&tmp_symbolic, sizeof(tmp_symbolic), "tmp_symbolic");
 	hdr.paxos.vrnd = tmp_symbolic;
 
-		uint64_t tmp_symbolic2;
+		uint64_t tmp_symbolic2 = 0;
 	klee_make_symbolic(&tmp_symbolic2, sizeof(tmp_symbolic2), "tmp_symbolic2");
 	hdr.paxos.paxosval = tmp_symbolic2;
 
-		uint64_t tmp_symbolic3;
+		uint64_t tmp_symbolic3 = 0;
 	klee_make_symbolic(&tmp_symbolic3, sizeof(tmp_symbolic3), "tmp_symbolic3");
 	hdr.paxos.acptid = tmp_symbolic3;
 
@@ -366,7 +359,7 @@ void handle_2a_0_201619(uint32_t learner_port) {
 	traverse_handle_2a = 1;
 	action_run = 201619;
 		hdr.paxos.msgtype = 3;
-		uint64_t tmp_symbolic;
+		uint64_t tmp_symbolic = 0;
 	klee_make_symbolic(&tmp_symbolic, sizeof(tmp_symbolic), "tmp_symbolic");
 	hdr.paxos.acptid = tmp_symbolic;
 
@@ -403,7 +396,7 @@ void forward_0_201729(uint32_t port) {
 // Action
 void read_round_0_201746() {
 	action_run = 201746;
-			uint64_t tmp_symbolic;
+			uint64_t tmp_symbolic = 0;
 	klee_make_symbolic(&tmp_symbolic, sizeof(tmp_symbolic), "tmp_symbolic");
 	meta.local_metadata.round = tmp_symbolic;
 

@@ -11,9 +11,15 @@ def make_sure_path_exists(path):
         if exception.errno != errno.EEXIST:
             raise
 
+def run_klee_34(filename):
+    os.system("clang -I ../../include -emit-llvm -O3 -g " + filename + " > /dev/null")
+    # -optimize -output-stats=off -warnings-only-to-file 
+    os.system("/home/osboxes/klee-3.4/klee_build_dir/bin/klee --search=dfs --no-output " + filename[:-1] + "o > " + filename[:-1] + "-results.txt")
+
 def run_klee(filename):
     os.system("llvm-gcc -I ../../include -emit-llvm -c -g " + filename + " > /dev/null")
-    os.system("klee --search=dfs --no-output " + filename[:-1] + "o > " + filename[:-1] + "-results.txt")
+    # -optimize -output-stats=off -warnings-only-to-file 
+    os.system("klee --search=dfs --no-output -optimize -solver-optimize-divides -use-forked-solver -use-cache -use-cex-cache  -use-independent-solver " + filename[:-1] + "o > " + filename[:-1] + "-results.txt")
 
 def slice_model(filename):
     sliced_file_name = filename[:-2] + "-sliced.c"
@@ -42,7 +48,7 @@ def verify_assertion(assertion, lines, filename):
                 slicedfile.next()
                 continue
         processed_file.close()
-        run_klee(processed_file_name)
+        run_klee_34(processed_file_name)
 
 def parallel_checking(filename):
     with open(filename) as f:
@@ -83,7 +89,7 @@ def check_model(filename):
                     slicedfile.next()
                     continue
             processed_file.close()
-            run_klee(processed_file_name)
+            run_klee_34(processed_file_name)
         
 def no_slice(filename):
     with open(filename) as f:
@@ -94,11 +100,14 @@ def no_slice(filename):
                 line = "\t" + line[3:]
             new_model_file.write("%s" % line)
         new_model_file.close()
-        run_klee(new_file_name)
+        run_klee_34(new_file_name)
+
+def reduction(total, optimized):
+    return " reduction: " + str((total - optimized) * 100 / total) + "%"
         
 
 start = time.time()
-parallel_checking(sys.argv[1])
+#parallel_checking(sys.argv[1])
 end = time.time()
 parallel_time = end - start
 
@@ -114,6 +123,6 @@ no_slice(sys.argv[1])
 end = time.time()
 noslice_time = end - start
 
-print "\n\nParallel: " + str(parallel_time)
-print "Nonparallel: " + str(nonparallel_time)
-print "Noslice: " + str(noslice_time)
+print "\n\nNoslice: " + str(noslice_time)
+print "Nonparallel: " + str(nonparallel_time) + reduction(noslice_time, nonparallel_time)
+print "Parallel: " + str(parallel_time) + reduction(noslice_time, parallel_time)

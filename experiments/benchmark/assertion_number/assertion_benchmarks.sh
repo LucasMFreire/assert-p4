@@ -2,7 +2,7 @@ cd traverse_tests
 
 count=1
 for filename in `ls *.c | sort -V`; do
-    llvm-gcc -I ../../include -emit-llvm -c -g "$filename"
+    llvm-gcc -I ../../include -emit-llvm -c -g -O3 "$filename"
     STARTTIME=$(date +%s)
     klee --search=dfs --warnings-only-to-file --no-output $(basename "$filename" .c).o
     ENDTIME=$(date +%s)
@@ -17,7 +17,7 @@ cd equality_tests
 
 count=1
 for filename in `ls *.c | sort -V`; do
-    llvm-gcc -I ../../include -emit-llvm -c -g "$filename"
+    llvm-gcc -I ../../include -emit-llvm -c -g -O3 "$filename"
     STARTTIME=$(date +%s)
     klee --search=dfs --warnings-only-to-file --no-output $(basename "$filename" .c).o
     ENDTIME=$(date +%s)
@@ -32,7 +32,7 @@ cd symbolic_equality_tests
 
 count=1
 for filename in `ls *.c | sort -V`; do
-    llvm-gcc -I ../../include -emit-llvm -c -g "$filename"
+    llvm-gcc -I ../../include -emit-llvm -c -g -O3 "$filename"
     STARTTIME=$(date +%s)
     klee --search=dfs --warnings-only-to-file --no-output $(basename "$filename" .c).o
     ENDTIME=$(date +%s)
